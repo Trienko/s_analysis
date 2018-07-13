@@ -16,6 +16,8 @@ class SClass():
       plt.show()
 
 if __name__ == "__main__":
+   s = SClass()
+   s.drawWorldMap()
    
       
 
