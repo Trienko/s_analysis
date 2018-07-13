@@ -13,6 +13,8 @@ class SClass():
   def drawWorldMap(self):
       map = Basemap()
       map.drawcoastlines()
+      map.drawparallels(np.arange(-90,91,30),labels=[1,0,0,0])
+      map.drawmeridians(np.arange(-180,181,30), labels=[0,0,0,1])
       plt.show()
 
   def gridData_to_2DMap(self,file_name="8monthsAIS.txt",N=10001,v=1000000,file_save='TwoDGrid.sav'):
@@ -57,20 +59,48 @@ class SClass():
 
       joblib.dump(matriks, file_save)  
 
-  def plotGriddedData(self,file_save='TwoDGrid.sav',vmax=50,cmv='Reds',image_name='test.pdf'):
+  def plotGriddedData(self,file_save='TwoDGrid.sav',vmax=50,cmv='Reds',image_name='test.pdf',N=10001):
       map = Basemap()
       map.drawcoastlines()
       matriks = joblib.load(file_save)
       map.imshow(matriks,vmax=vmax,cmap=plt.cm.get_cmap(cmv))
       plt.savefig(image_name)
       plt.show()
+
+  def plotEU(self,file_save='TwoDGrid.sav',vmax=50,cmv='Reds',image_name='test.pdf',N=10001):
+      map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
+      map.drawcoastlines()
+
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      index_x_1 = np.searchsorted(x,-15)-1
+      index_x_2 = np.searchsorted(x,30)-1
+
+      index_y_1 = np.searchsorted(y,30)-1
+      index_y_2 = np.searchsorted(y,60)-1
+
+      matriks = joblib.load(file_save)
+      sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      matriks=''
+
+      map.imshow(sub_m,vmax=vmax,cmap=plt.cm.get_cmap(cmv))
+      plt.savefig(image_name)
+      plt.show()
+      joblib.dump(sub_m, "EU.sav")   
         
       
 
 if __name__ == "__main__":
    s = SClass()
    #s.drawWorldMap()
-   s.plotGriddedData()
+   s.plotEU()
+   #s.plotGriddedData()
    
       
 
