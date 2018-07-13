@@ -15,9 +15,62 @@ class SClass():
       map.drawcoastlines()
       plt.show()
 
+  def gridData_to_2DMap(self,file_name="8monthsAIS.txt",N=10001,v=1000000,file_save='TwoDGrid.sav'):
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      matriks = np.zeros((N-1,N-1),dtype=int)
+
+      counter = 0
+
+      with open(file_name) as infile:
+           for line in infile:
+               line_split = line.split(" ")
+
+               lat = float(line_split[2]) 
+               lon = float(line_split[3])
+
+               index_x = np.searchsorted(x,lon)
+               index_y = np.searchsorted(y,lat)
+
+               if (index_x == N):
+                  index_x = index_x - 2
+               elif (index_x > 0):
+                  index_x = index_x - 1
+           
+               if (index_y == N):
+                  index_y = index_y - 2
+               elif (index_y > 0):
+                  index_y = index_y - 1
+ 
+               matriks[index_y,index_x]+=1
+
+               counter = counter + 1
+               if (counter % v == 0):
+                  print("counter = ",counter) 
+
+
+      joblib.dump(matriks, file_save)  
+
+  def plotGriddedData(self,file_save='TwoDGrid.sav',vmax=50,cmv='Reds',image_name='test.pdf'):
+      map = Basemap()
+      map.drawcoastlines()
+      matriks = joblib.load(file_save)
+      map.imshow(matriks,vmax=vmax,cmap=plt.cm.get_cmap(cmv))
+      plt.savefig(image_name)
+      plt.show()
+        
+      
+
 if __name__ == "__main__":
    s = SClass()
-   s.drawWorldMap()
+   #s.drawWorldMap()
+   s.plotGriddedData()
    
       
 
