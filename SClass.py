@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import timeit
 from sklearn.externals import joblib
 import matplotlib.pyplot as plt
+from scipy.spatial import ConvexHull
 
 class SClass():
 
@@ -66,6 +67,74 @@ class SClass():
       map.imshow(matriks,vmax=vmax,cmap=plt.cm.get_cmap(cmv))
       plt.savefig(image_name)
       plt.show()
+
+  def plotEUContour(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
+      map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
+      map.drawcoastlines()
+
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      index_x_1 = np.searchsorted(x,-15)-1
+      index_x_2 = np.searchsorted(x,30)-1
+
+      index_y_1 = np.searchsorted(y,30)-1
+      index_y_2 = np.searchsorted(y,60)-1
+
+      matriks = joblib.load(file_save)
+      sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      matriks=''
+      
+      sub_m = np.log(sub_m)
+      im = map.imshow(sub_m,cmap=plt.cm.get_cmap(cmv))
+      plt.show()
+
+      xx,yy = np.meshgrid(x_value[index_x_1:index_x_2],y_value[index_y_1:index_y_2])
+
+      cs = map.contourf(xx,yy,sub_m)
+      #plt.show()
+      
+      map.drawcoastlines()
+
+      c_v = ["b","r","m","c","g","k","b","r"]
+
+      for i in range(1):
+
+          paths = cs.collections[i].get_paths()
+          k = 0      
+
+          for k in range(len(paths)):
+              v = paths[k].vertices
+              if len(v[:,0]) > 100:
+                 #x = v[:,0]
+                 #y = v[:,1]
+
+                 hull = ConvexHull(v)
+                 for simplex in hull.simplices:
+                     plt.plot(v[simplex, 0], v[simplex, 1], c=c_v)
+
+                 map.plot(x,y,c=c_v[i])
+                 #plt.Polygon(segments[0], fill=False, color='w')
+              k = k+1
+              if k%100 == 0:
+                 print(str(k))
+                 print(str(len(paths)))
+      plt.show()
+      
+      #for k in range(1000):
+
+      #    dat0= contours.allsegs[3][k]
+      #    plt.plot(dat0[:,0],dat0[:,1],"r")
+
+      #plt.show()
+
+      
+
 
   def plotEU(self,file_save='TwoDGrid.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001):
       map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
@@ -164,7 +233,8 @@ class SClass():
 if __name__ == "__main__":
    s = SClass()
    #s.drawWorldMap()
-   s.plotEU()
+   #s.plotEU()
+   s.plotEUContour()
    #s.plotGriddedData()
    
       
