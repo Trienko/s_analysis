@@ -67,7 +67,7 @@ class SClass():
       plt.savefig(image_name)
       plt.show()
 
-  def plotEU(self,file_save='TwoDGrid.sav',vmax=50,cmv='Reds',image_name='test.pdf',N=10001):
+  def plotEU(self,file_save='TwoDGrid.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001):
       map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
       map.drawcoastlines()
 
@@ -88,10 +88,75 @@ class SClass():
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
       matriks=''
+      
+      sub_m = np.log(sub_m)
+      
+      sub_m_copy = np.copy(sub_m)
+      
+      sub_m_copy[sub_m<2] = 0
+      
+      X = np.reshape(sub_m_copy,(sub_m_copy.shape[0]*sub_m_copy.shape[1],1))
+      
+      from sklearn.cluster import KMeans
+      
+      kmeans = KMeans(n_clusters=7).fit(X)
+      
+      #KMeans(n_clusters=2, random_state=0).fit(X)
+      
+      
+      sub_m_copy = np.reshape(kmeans.labels_,(sub_m_copy.shape[0],sub_m_copy.shape[1]))
+      
+      sub_m = np.copy(sub_m_copy)
+      
+      sub_m_copy[sub_m==6] = 1
+      sub_m_copy[sub_m<>6] = 0
+            
+      #from skimage import filters
+      #edges = filters.sobel(sub_m)
+      
+      #hist = np.histogram(sub_m.flatten(), bins='auto')
 
-      map.imshow(sub_m,vmax=vmax,cmap=plt.cm.get_cmap(cmv))
-      plt.savefig(image_name)
+      im = map.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      cb = map.colorbar(im, location='bottom', label="contour lines")
       plt.show()
+      plt.close()
+      
+      from matplotlib import cm
+      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+      sub_m_copy = sub_m_copy[::-1,:]
+      # Classic straight-line Hough transform
+      h, theta, d = hough_line(sub_m_copy)
+      
+      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+     
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+      lines = probabilistic_hough_line(sub_m_copy, threshold=10, line_length=50,
+                                 line_gap=10)
+      
+      for line in lines:
+          p0, p1 = line
+          plt.plot((p0[0], p1[0]), (p0[1], p1[1]))
+
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      
+      #map.colorbar(im)
+      
+      plt.savefig(image_name)
+      
       joblib.dump(sub_m, "EU.sav")   
         
       
