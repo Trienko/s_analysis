@@ -68,6 +68,227 @@ class SClass():
       plt.savefig(image_name)
       plt.show()
 
+  def convertMatToGray(self,matA):
+      max_v = np.max(matA)
+      fac = 255.0/max_v
+      matA = np.round(matA*fac).astype(np.uint8)
+      return matA
+  
+  def testSmallerImage(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
+      map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
+      map.drawcoastlines()
+
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      index_x_1 = np.searchsorted(x,-15)-1
+      index_x_2 = np.searchsorted(x,30)-1
+
+      index_y_1 = np.searchsorted(y,30)-1
+      index_y_2 = np.searchsorted(y,60)-1
+
+      matriks = joblib.load(file_save)
+      sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      matriks=''
+      
+      sub_m = np.log(sub_m)
+      sub_m = self.convertMatToGray(sub_m)
+
+      #new_m = np.zeros(sub_m.shape,dtype=int)
+      #new_m[sub_m>75] = 1
+      from skimage.feature import canny
+      from skimage.morphology import watershed, disk
+      from skimage import data
+      from skimage.filters import rank
+      from skimage.util import img_as_ubyte
+      
+      denoised = rank.median(sub_m, disk(2)) 
+      
+      im = map.imshow(denoised,cmap=plt.cm.get_cmap('gray'))
+      plt.show()
+
+      #print(im.shape)
+      
+      #from skimage import measure
+
+      #contours = measure.find_contours(sub_m/255.0, 0.5)
+      #for n, contour in enumerate(contours):
+      #    map.plot(contour[:, 1], contour[:, 0], linewidth=3, c="b")
+      #plt.show()
+
+      edges = canny(denoised/255.,sigma=1.0)
+      plt.imshow(edges[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      #print(edges)
+      plt.show()
+
+      #from scipy import ndimage as ndi
+      #fill_coins = ndi.binary_fill_holes(edges)
+      #plt.imshow(fill_coins[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      #print(edges)
+      #plt.show()
+
+
+      histo = plt.hist(sub_m.ravel(), bins=np.arange(0, 256))
+      plt.show()
+
+      #from skimage.segmentation import slic
+
+      #segments = slic(sub_m/255., n_segments=1000, compactness=10)
+      #plt.imshow(segments,cmap=plt.cm.get_cmap('grey'),aspect='auto')
+      #plt.show()
+      
+
+      '''
+      from skimage.filters import threshold_otsu, threshold_local
+
+      image = np.copy(sub_m)
+
+      global_thresh = threshold_otsu(image)
+      binary_global = image > global_thresh
+
+      block_size = 75
+      local_thresh = threshold_local(image, block_size, offset=10)
+      binary_local = image > local_thresh
+
+      plt.imshow(binary_global[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show()
+      plt.imshow(binary_local[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show() 
+
+      from skimage.morphology import disk
+      from skimage.filters import threshold_otsu, rank
+      from skimage.util import img_as_ubyte
+      
+      img = img_as_ubyte(image)
+
+      radius = 20
+      selem = disk(radius)
+
+      local_otsu = rank.otsu(img, selem)
+
+      plt.imshow(img[::-1,:]>local_otsu[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show()  
+
+      from skimage.filters import unsharp_mask
+      result_1 = unsharp_mask(image, radius=1, amount=1)
+      plt.imshow(result_1[::-1,:]>local_otsu[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show()  
+      '''
+
+
+  def plotEUGray(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
+      map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
+      map.drawcoastlines()
+
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      index_x_1 = np.searchsorted(x,-15)-1
+      index_x_2 = np.searchsorted(x,30)-1
+
+      index_y_1 = np.searchsorted(y,30)-1
+      index_y_2 = np.searchsorted(y,60)-1
+
+      matriks = joblib.load(file_save)
+      sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      matriks=''
+      
+      sub_m = np.log(sub_m)
+      sub_m = self.convertMatToGray(sub_m)
+
+      #new_m = np.zeros(sub_m.shape,dtype=int)
+      #new_m[sub_m>75] = 1
+      from skimage.feature import canny
+      from skimage.morphology import watershed, disk
+      from skimage import data
+      from skimage.filters import rank
+      from skimage.util import img_as_ubyte
+      
+      denoised = rank.median(sub_m, disk(2)) 
+      
+      im = map.imshow(denoised,cmap=plt.cm.get_cmap('gray'))
+      plt.show()
+
+      #print(im.shape)
+      
+      #from skimage import measure
+
+      #contours = measure.find_contours(sub_m/255.0, 0.5)
+      #for n, contour in enumerate(contours):
+      #    map.plot(contour[:, 1], contour[:, 0], linewidth=3, c="b")
+      #plt.show()
+
+      edges = canny(denoised/255.,sigma=1.0)
+      plt.imshow(edges[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      #print(edges)
+      plt.show()
+
+      #from scipy import ndimage as ndi
+      #fill_coins = ndi.binary_fill_holes(edges)
+      #plt.imshow(fill_coins[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      #print(edges)
+      #plt.show()
+
+
+      histo = plt.hist(sub_m.ravel(), bins=np.arange(0, 256))
+      plt.show()
+
+      #from skimage.segmentation import slic
+
+      #segments = slic(sub_m/255., n_segments=1000, compactness=10)
+      #plt.imshow(segments,cmap=plt.cm.get_cmap('grey'),aspect='auto')
+      #plt.show()
+      
+
+      '''
+      from skimage.filters import threshold_otsu, threshold_local
+
+      image = np.copy(sub_m)
+
+      global_thresh = threshold_otsu(image)
+      binary_global = image > global_thresh
+
+      block_size = 75
+      local_thresh = threshold_local(image, block_size, offset=10)
+      binary_local = image > local_thresh
+
+      plt.imshow(binary_global[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show()
+      plt.imshow(binary_local[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show() 
+
+      from skimage.morphology import disk
+      from skimage.filters import threshold_otsu, rank
+      from skimage.util import img_as_ubyte
+      
+      img = img_as_ubyte(image)
+
+      radius = 20
+      selem = disk(radius)
+
+      local_otsu = rank.otsu(img, selem)
+
+      plt.imshow(img[::-1,:]>local_otsu[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show()  
+
+      from skimage.filters import unsharp_mask
+      result_1 = unsharp_mask(image, radius=1, amount=1)
+      plt.imshow(result_1[::-1,:]>local_otsu[::-1,:],cmap=plt.cm.get_cmap('gray'),aspect='auto')
+      plt.show()  
+      '''
+
+
+
   def plotEUContour(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
       map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
       map.drawcoastlines()
@@ -103,20 +324,20 @@ class SClass():
 
       c_v = ["b","r","m","c","g","k","b","r"]
 
-      for i in range(1):
+      for i in range(3):
 
           paths = cs.collections[i].get_paths()
           k = 0      
 
           for k in range(len(paths)):
               v = paths[k].vertices
-              if len(v[:,0]) > 100:
-                 #x = v[:,0]
-                 #y = v[:,1]
+              if len(v[:,0]) > 500:
+                 x = v[:,0]
+                 y = v[:,1]
 
-                 hull = ConvexHull(v)
-                 for simplex in hull.simplices:
-                     plt.plot(v[simplex, 0], v[simplex, 1], c=c_v)
+                 #hull = ConvexHull(v)
+                 #for simplex in hull.simplices:
+                 #    plt.plot(v[simplex, 0], v[simplex, 1], c=c_v[i])
 
                  map.plot(x,y,c=c_v[i])
                  #plt.Polygon(segments[0], fill=False, color='w')
@@ -234,7 +455,7 @@ if __name__ == "__main__":
    s = SClass()
    #s.drawWorldMap()
    #s.plotEU()
-   s.plotEUContour()
+   s.plotEUGray()
    #s.plotGriddedData()
    
       
