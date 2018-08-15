@@ -73,9 +73,81 @@ class SClass():
       fac = 255.0/max_v
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
+
+  def followLine(self, p, q, two_dim_array, max_points = 8):
+      points = np.zeros((1,2),dype = int)
+      points[0,0] = p
+      points[0,1] = q
+
+      mask = np.zeros(two_dim_array.shape,dtype=int)
+      
+      r = p
+      c = q
+
+      x_max = two_dim_array.shape[0]
+      y_max = two_dim_array.shape[1]
+
+
+      processed_points = np.copy(points)
+
+      if two_dim_array[p,q] == 0:
+         return processed_points
+
+      if (p == 0) or (q == 0):
+         return processed_points
+
+      if (p == x_max - 1) or (q == y_max - 1):
+         return processed_points
+
+      continue_var = True
+      points_counter = 0
+
+      while (continue_var) and (points_counter < max_points):
+           
+            one = np.absolute(two_dim_array[r,c] - two_dim_array[r-1,c-1])
+            two = np.absolute(two_dim_array[r,c] - two_dim_array[r-1,c])
+            three = np.absolute(two_dim_array[r,c] - two_dim_array[r-1,c+1])
+            four = np.absolute(two_dim_array[r,c] - two_dim_array[r,c-1])
+            five = np.absolute(two_dim_array[r,c] - two_dim_array[r,c+1])
+            six = np.absolute(two_dim_array[r,c] - two_dim_array[r+1,c-1])
+            seven = np.absolute(two_dim_array[r,c] - two_dim_array[r+1,c])
+            eight = np.absolute(two_dim_array[r,c] - two_dim_array[r+1,c+1])
+
+            idx_array = np.array([[r-1,c-1],[r-1,c],[r-1,c+1],[r,c-1],[r,c+1],[r+1,c-1],[r+1,c],[r+1,c+1]])
+
+            temp_values = np.array([one,two,three,four,five,six,seven,eight])
+
+            idx_sort = np.argsort(temp_values) 
+            idx_array = idx_array[idx_sort,:]
+
+            temp_points = np.zeros((2,2),dype = int)
+
+            temp_points[0,:] = idx_array[0,:]
+            temp_points[1,:] = idx_array[1,:]
+ 
+            for k in range(2):
+                temp_points[k,:] = idx_array[k,:]
+                if ((temp_points[k,0] <> 0) and (temp_points[k,1] <> 0) and (temp_points[k,0] <> x_max-1) and (temp_points[k,0] <> y_max-1)):
+                   if (mask[temp_points[k,0],temp_points[k,1]] <> 1):
+                      points = np.vstack((points,temp_points[k,:]))
+                      mask[temp_points[k,0],temp_points[k,1]] = 1
+                   
+                     
+                   
+
+            
+
+              
+
+      
+
+       
+      
+      
+
   
   def testSmallerImage(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
-      map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
+      map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
       map.drawcoastlines()
 
       x = np.linspace(-180,180,N,endpoint=True)
@@ -86,11 +158,11 @@ class SClass():
       y_value = y + (y[1]-y[2])/2.0
       y_value = y_value[:-1]
 
-      index_x_1 = np.searchsorted(x,-15)-1
+      index_x_1 = np.searchsorted(x,22)-1
       index_x_2 = np.searchsorted(x,30)-1
 
       index_y_1 = np.searchsorted(y,30)-1
-      index_y_2 = np.searchsorted(y,60)-1
+      index_y_2 = np.searchsorted(y,42)-1
 
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
@@ -99,18 +171,42 @@ class SClass():
       sub_m = np.log(sub_m)
       sub_m = self.convertMatToGray(sub_m)
 
+      im = map.imshow(sub_m,cmap=plt.cm.get_cmap('gray'))
+      plt.show()
+
+      
+      histo = plt.hist(sub_m.ravel(), bins=np.arange(0, 256))
+      plt.show() 
+
+      print(sub_m.shape)
+
+      plt.plot(sub_m[300,:])
+      plt.plot(sub_m[301,:])
+      plt.plot(sub_m[302,:])
+      plt.show()
+
+
+      from skimage.filters import threshold_otsu
+
+      thresh = threshold_otsu(sub_m)
+      binary = sub_m > 140
+
+      plt.imshow(binary[:,::-1],aspect='auto',cmap=plt.cm.get_cmap('gray'))
+      plt.show()
+
+      
+      '''
       #new_m = np.zeros(sub_m.shape,dtype=int)
       #new_m[sub_m>75] = 1
-      from skimage.feature import canny
-      from skimage.morphology import watershed, disk
-      from skimage import data
-      from skimage.filters import rank
-      from skimage.util import img_as_ubyte
+      #from skimage.feature import canny
+      #from skimage.morphology import watershed, disk
+      #from skimage import data
+      #from skimage.filters import rank
+      #from skimage.util import img_as_ubyte
       
-      denoised = rank.median(sub_m, disk(2)) 
+      #denoised = rank.median(sub_m, disk(2)) 
       
-      im = map.imshow(denoised,cmap=plt.cm.get_cmap('gray'))
-      plt.show()
+ 
 
       #print(im.shape)
       
@@ -141,7 +237,7 @@ class SClass():
       #segments = slic(sub_m/255., n_segments=1000, compactness=10)
       #plt.imshow(segments,cmap=plt.cm.get_cmap('grey'),aspect='auto')
       #plt.show()
-      
+      '''
 
       '''
       from skimage.filters import threshold_otsu, threshold_local
@@ -455,7 +551,8 @@ if __name__ == "__main__":
    s = SClass()
    #s.drawWorldMap()
    #s.plotEU()
-   s.plotEUGray()
+   #s.plotEUGray()
+   s.testSmallerImage()
    #s.plotGriddedData()
    
       
