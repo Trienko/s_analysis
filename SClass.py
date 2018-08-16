@@ -74,12 +74,13 @@ class SClass():
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
 
-  def followLine(self, p, q, two_dim_array, max_points = 8):
-      points = np.zeros((1,2),dype = int)
-      points[0,0] = p
-      points[0,1] = q
+  def followLine(self, p, q, two_dim_array, max_points = 100):
+      processed_points = np.zeros((1,2),dtype = int)
+      processed_points[0,0] = p
+      processed_points[0,1] = q
 
       mask = np.zeros(two_dim_array.shape,dtype=int)
+      mask[p,q] = 1
       
       r = p
       c = q
@@ -87,22 +88,21 @@ class SClass():
       x_max = two_dim_array.shape[0]
       y_max = two_dim_array.shape[1]
 
-
-      processed_points = np.copy(points)
-
+      points = np.array([])
+      
       if two_dim_array[p,q] == 0:
-         return processed_points
+         return mask,processed_points
 
       if (p == 0) or (q == 0):
-         return processed_points
+         return mask,processed_points
 
       if (p == x_max - 1) or (q == y_max - 1):
-         return processed_points
+         return mask,processed_points
 
       continue_var = True
       points_counter = 0
 
-      while (continue_var) and (points_counter < max_points):
+      while (continue_var) and (points_counter <= max_points):
            
             one = np.absolute(two_dim_array[r,c] - two_dim_array[r-1,c-1])
             two = np.absolute(two_dim_array[r,c] - two_dim_array[r-1,c])
@@ -120,7 +120,7 @@ class SClass():
             idx_sort = np.argsort(temp_values) 
             idx_array = idx_array[idx_sort,:]
 
-            temp_points = np.zeros((2,2),dype = int)
+            temp_points = np.zeros((2,2),dtype = int)
 
             temp_points[0,:] = idx_array[0,:]
             temp_points[1,:] = idx_array[1,:]
@@ -129,22 +129,45 @@ class SClass():
                 temp_points[k,:] = idx_array[k,:]
                 if ((temp_points[k,0] <> 0) and (temp_points[k,1] <> 0) and (temp_points[k,0] <> x_max-1) and (temp_points[k,0] <> y_max-1)):
                    if (mask[temp_points[k,0],temp_points[k,1]] <> 1):
-                      points = np.vstack((points,temp_points[k,:]))
-                      mask[temp_points[k,0],temp_points[k,1]] = 1
-                   
-                     
-                   
+                      if points.size == 0:
+                         points = np.zeros((1,2),dtype = int)
+                         points[0,0] = temp_points[k,0]
+                         points[0,1] = temp_points[k,1]
+                      else:
+                         points = np.vstack((temp_points[k,:],points))  
+                      mask[temp_points[k,0],temp_points[k,1]] = 1    
+                else:
+                    processed_points = np.vstack((processed_points,temp_points[k,:]))
+                    mask[temp_points[k,0],temp_points[k,1]] = 1 
 
+                
             
+            temp_points = np.zeros((1,2),dtype = int)
+            
+            temp_points[0,0] = r
+            temp_points[0,1] = c
+            
+            if points_counter <> 0:
+               processed_points = np.vstack((processed_points,temp_points))
+               mask[temp_points[0,0],temp_points[0,1]] = 1
+            
+            if points.size == 0:
+               continue_var = False
+            else:
+               r = points[0,0]
+               c = points[0,1]
+               if points.size > 1: 
+                  points = points[1:,:]
+               else:
+                  points = np.array([])
 
-              
+            points_counter = points_counter + 1
+            print(mask)
+            print(processed_points)
+            print(points)
 
-      
-
-       
-      
-      
-
+     
+      return mask, processed_points      
   
   def testSmallerImage(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
@@ -171,9 +194,17 @@ class SClass():
       sub_m = np.log(sub_m)
       sub_m = self.convertMatToGray(sub_m)
 
+      m,p = self.followLine(469,81,sub_m.astype(int))
+      
+
       im = map.imshow(sub_m,cmap=plt.cm.get_cmap('gray'))
       plt.show()
 
+      plt.imshow(sub_m)
+      plt.show()
+
+      plt.imshow(m)
+      plt.show()
       
       histo = plt.hist(sub_m.ravel(), bins=np.arange(0, 256))
       plt.show() 
@@ -553,6 +584,12 @@ if __name__ == "__main__":
    #s.plotEU()
    #s.plotEUGray()
    s.testSmallerImage()
+   #x = np.diag(np.ones((8,),dtype=int)) 
+   #m,p = s.followLine(3,5,x+1)
+   #print(p)
+   #plt.imshow(m)
+   #plt.show()
+   
    #s.plotGriddedData()
    
       
