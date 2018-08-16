@@ -510,11 +510,47 @@ class SClass():
       #TODO: Take into account -1 offset, land water difference
       #xy = np.asarray(np.where(edges_column == 1)).T
       #edges_column[edges_column==1] = 0
-      #xy[:,0] = xy[:,0]+1   
+      #xy[:,0] = xy[:,0]+1  
+
+      edges[0,:] = 0
+      edges[:,0] = 0
+      edges[1,:] = 0
+      edges[:,1] = 0
+      
+      edges[edges.shape[0]-1,:] = 0
+      edges[:,edges.shape[1]-1] = 0
+      edges[edges.shape[0]-2,:] = 0
+      edges[:,edges.shape[1]-2] = 0
 
       plt.imshow(edges[::-1,:])
       plt.show()
       return edges
+
+  def expandMask(self,edges,window):
+      xy = np.asarray(np.where(edges == 1)).T
+      mask = np.copy(edges)
+      for k in range(xy.shape[0]):
+          row = xy[k,0]
+          column = xy[k,1]
+
+          l_r = row - window
+          if l_r < 0:
+             l_r = 0
+          u_r = row + window
+          if u_r > edges.shape[0]-1:
+             u_r = edges.shape[0]-1
+
+          l_c = column - window
+          if l_c < 0:
+             l_c = 0
+          u_c = column + window
+          if u_c > edges.shape[1]-1:
+             u_c = edges.shape[1]-1
+          mask[l_r:u_r,l_c:u_c] = 1
+
+      plt.imshow(mask[::-1,:])
+      plt.show()
+      return mask
 
   def plotEUContour(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
       map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
@@ -685,7 +721,8 @@ if __name__ == "__main__":
    #s.plotEUGray()
    #s.applyKMeans()
    mask = s.createMask()
-   s.findEdges(mask)
+   edges = s.findEdges(mask)
+   e_mask = s.expandMask(edges,6)
    #x = np.diag(np.ones((8,),dtype=int)) 
    #m,p = s.followLine(3,5,x+1)
    #print(p)
