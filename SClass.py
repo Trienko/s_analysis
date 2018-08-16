@@ -469,7 +469,52 @@ class SClass():
       plt.show()  
       '''
 
+  def createMask(self,llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60,N=1001):
+      map = Basemap(resolution='c',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
+      
+      
+      x = np.linspace(llcrnrlon,urcrnrlon,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
 
+      y = np.linspace(llcrnrlat,urcrnrlat,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      mask = np.ones((N-1,N-1),dtype=int)
+
+      for k in range (len(x_value)):
+          print("k = ",k)
+          for i in range(len(y_value)):
+              if map.is_land(x_value[k],y_value[i]):
+                 mask[i,k] = 0
+
+      #mask = mask[::-1,::-1]
+      
+      map.drawcoastlines()
+      map.imshow(mask)
+      map.drawcoastlines()
+      plt.show() 
+
+      return mask
+
+
+  def findEdges(self,mask):
+      mask_rolled = np.roll(mask,1,axis=1)
+      edges_column = np.absolute(mask - mask_rolled)
+      mask_rolled = np.roll(mask,1,axis=0)
+      edges_row = np.absolute(mask - mask_rolled)
+      edges = edges_row + edges_column
+
+      edges[edges>1] = 1
+      #TODO: Take into account -1 offset, land water difference
+      #xy = np.asarray(np.where(edges_column == 1)).T
+      #edges_column[edges_column==1] = 0
+      #xy[:,0] = xy[:,0]+1   
+
+      plt.imshow(edges[::-1,:])
+      plt.show()
+      return edges
 
   def plotEUContour(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
       map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
@@ -638,7 +683,9 @@ if __name__ == "__main__":
    #s.drawWorldMap()
    #s.plotEU()
    #s.plotEUGray()
-   s.applyKMeans()
+   #s.applyKMeans()
+   mask = s.createMask()
+   s.findEdges(mask)
    #x = np.diag(np.ones((8,),dtype=int)) 
    #m,p = s.followLine(3,5,x+1)
    #print(p)
