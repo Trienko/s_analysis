@@ -74,6 +74,61 @@ class SClass():
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
 
+  def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
+      map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
+      map.drawcoastlines()
+
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      index_x_1 = np.searchsorted(x,22)-1
+      index_x_2 = np.searchsorted(x,30)-1
+
+      index_y_1 = np.searchsorted(y,30)-1
+      index_y_2 = np.searchsorted(y,42)-1
+
+      matriks = joblib.load(file_save)
+      sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      matriks=''
+      
+      sub_m = np.log(sub_m)
+      sub_m = self.convertMatToGray(sub_m)
+
+      im = map.imshow(sub_m,cmap=plt.cm.get_cmap('gray'))
+      plt.show()
+
+      X = np.reshape(sub_m,(sub_m.shape[0]*sub_m.shape[1],1))
+
+
+      X2 = X[X<>0]
+
+      X2 = np.reshape(X2,(len(X2),1))
+
+      
+      from sklearn.cluster import KMeans
+      
+      kmeans = KMeans(n_clusters=5, random_state=0).fit(X2)
+      
+      #KMeans(n_clusters=2, random_state=0).fit(X)
+      
+      
+      X[X<>0] = kmeans.labels_+1   
+
+      sub_m_copy = np.reshape(X,(sub_m.shape[0],sub_m.shape[1]))
+      map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
+      map.drawcoastlines()
+      #threshold 
+      sub_copy
+      map.imshow(sub_m_copy)
+      plt.show() 
+
+      
+
   def followLine(self, p, q, two_dim_array, max_points = 100):
       processed_points = np.zeros((1,2),dtype = int)
       processed_points[0,0] = p
@@ -583,7 +638,7 @@ if __name__ == "__main__":
    #s.drawWorldMap()
    #s.plotEU()
    #s.plotEUGray()
-   s.testSmallerImage()
+   s.applyKMeans()
    #x = np.diag(np.ones((8,),dtype=int)) 
    #m,p = s.followLine(3,5,x+1)
    #print(p)
