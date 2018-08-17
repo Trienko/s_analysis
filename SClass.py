@@ -74,7 +74,7 @@ class SClass():
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
 
-  def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001):
+  def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
       map.drawcoastlines()
 
@@ -92,12 +92,21 @@ class SClass():
       index_y_1 = np.searchsorted(y,30)-1
       index_y_2 = np.searchsorted(y,42)-1
 
+      m = joblib.load(mask_file)
+      m = np.absolute(m-1)
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
       matriks=''
+      print(sub_m.shape)
       
       sub_m = np.log(sub_m)
       sub_m = self.convertMatToGray(sub_m)
+      sub_m = sub_m*m
+
+      #FILTER OR NOT
+      #from skimage.morphology import disk
+      #from skimage.filters.rank import median
+      #sub_m = median(sub_m, disk(1))
 
       im = map.imshow(sub_m,cmap=plt.cm.get_cmap('gray'))
       plt.show()
@@ -112,7 +121,7 @@ class SClass():
       
       from sklearn.cluster import KMeans
       
-      kmeans = KMeans(n_clusters=5, random_state=0).fit(X2)
+      kmeans = KMeans(n_clusters=4, random_state=0).fit(X2)
       
       #KMeans(n_clusters=2, random_state=0).fit(X)
       
@@ -123,8 +132,52 @@ class SClass():
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
       map.drawcoastlines()
       #threshold 
-      sub_copy
-      map.imshow(sub_m_copy)
+      #sub_copy
+      #map.imshow(sub_m_copy)
+      level = np.zeros(sub_m_copy.shape,dtype=sub_m_copy.dtype)
+      level[sub_m_copy==3] = 1
+      
+      from skimage.morphology import skeletonize
+      # perform skeletonization
+      skeleton = skeletonize(level)
+      map.imshow(level)
+      plt.show()
+
+      
+
+      from matplotlib import cm
+      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+      sub_m_copy = skeleton[::-1,:]
+      # Classic straight-line Hough transform
+      h, theta, d = hough_line(sub_m_copy)
+      
+      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+     
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      #plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close() 
+
+      lines = probabilistic_hough_line(sub_m_copy, threshold=10, line_length=50,
+                                 line_gap=10)
+      
+      for line in lines:
+          p0, p1 = line
+          plt.plot((p0[0], p1[0]), (p0[1], p1[1]))
+
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      #plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      
+           
       plt.show() 
 
       
@@ -469,19 +522,19 @@ class SClass():
       plt.show()  
       '''
 
-  def createMask(self,llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60,N=1001):
-      map = Basemap(resolution='c',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
+  def createMask(self,llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42,N_row=668,N_column=223):
+      map = Basemap(resolution='h',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       
       
-      x = np.linspace(llcrnrlon,urcrnrlon,N,endpoint=True)
+      x = np.linspace(llcrnrlon,urcrnrlon,N_column,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
       x_value = x_value[:-1]
 
-      y = np.linspace(llcrnrlat,urcrnrlat,N,endpoint=True)
+      y = np.linspace(llcrnrlat,urcrnrlat,N_row,endpoint=True)
       y_value = y + (y[1]-y[2])/2.0
       y_value = y_value[:-1]
 
-      mask = np.ones((N-1,N-1),dtype=int)
+      mask = np.ones((N_row-1,N_column-1),dtype=int)
 
       for k in range (len(x_value)):
           print("k = ",k)
@@ -719,10 +772,11 @@ if __name__ == "__main__":
    #s.drawWorldMap()
    #s.plotEU()
    #s.plotEUGray()
-   #s.applyKMeans()
-   mask = s.createMask()
-   edges = s.findEdges(mask)
-   e_mask = s.expandMask(edges,6)
+   s.applyKMeans()
+   #mask = s.createMask()
+   #edges = s.findEdges(mask)
+   #e_mask = s.expandMask(edges,3)
+   #joblib.dump(e_mask, "mask.sav") 
    #x = np.diag(np.ones((8,),dtype=int)) 
    #m,p = s.followLine(3,5,x+1)
    #print(p)
