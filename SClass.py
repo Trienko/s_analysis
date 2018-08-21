@@ -79,10 +79,12 @@ class SClass():
       map.drawcoastlines()
 
       x = np.linspace(-180,180,N,endpoint=True)
+      dx = np.absolute(x[1]-x[2])
       x_value = x + (x[1]-x[2])/2.0
       x_value = x_value[:-1]
 
       y = np.linspace(-90,90,N,endpoint=True)
+      dy = np.absolute(y[1]-y[2])
       y_value = y + (y[1]-y[2])/2.0
       y_value = y_value[:-1]
 
@@ -102,6 +104,8 @@ class SClass():
       sub_m = np.log(sub_m)
       sub_m = self.convertMatToGray(sub_m)
       sub_m = sub_m*m
+
+      old = np.copy(sub_m)
 
       #FILTER OR NOT
       #from skimage.morphology import disk
@@ -159,26 +163,29 @@ class SClass():
      
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          print("y0 = "+str(y0))
+
           y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          print("y1 = "+str(y1))
+
           plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
+          #break
       plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
       #plt.axes().set_aspect('auto', adjustable='box')
       plt.show()
       plt.close() 
 
-      lines = probabilistic_hough_line(sub_m_copy, threshold=10, line_length=50,
-                                 line_gap=10)
-      
-      for line in lines:
-          p0, p1 = line
-          plt.plot((p0[0], p1[0]), (p0[1], p1[1]))
-
-      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
-      #plt.axes().set_aspect('auto', adjustable='box')
+      map.imshow(old)
+      map.drawcoastlines()
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          print("y1 = "+str(dy*y1))
+          print("y2 = "+str(dy*y0))
+          map.plot((22, 30), (42-1*dy*y0, 42-1*dy*y1), '-r')
+          #break
       plt.show()
-      
-           
-      plt.show() 
+
 
       
 
