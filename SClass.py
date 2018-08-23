@@ -18,6 +18,104 @@ class SClass():
       map.drawmeridians(np.arange(-180,181,30), labels=[0,0,0,1])
       plt.show()
 
+  def intersectionsLand(self,S,llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42,Nx = 2000):
+      map = Basemap(resolution='h',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
+      S_int = []
+      for s in S:
+          m = (s[0][1] - s[1][1])/(s[0][0] - s[1][0])
+          c = s[0][1] - m*s[0][0]
+          
+          x1 = (llcrnrlat - c)/m
+          x2 = (urcrnrlat - c)/m
+          
+          #print("s = "+str(s))
+          #print("x1 = "+str(x1))
+          #print("x2 = "+str(x2))
+
+          if (x1 > x2):
+             t = x1
+             x1 = x2
+             x2 = t
+
+          if np.absolute(x2-x1) > np.absolute(llcrnrlon - urcrnrlon):
+             x1 = llcrnrlon
+             x2 = urcrnrlon 
+
+          print("s = "+str(s))
+          print("x1 = "+str(x1))
+          print("x2 = "+str(x2))
+
+
+          x_value = np.linspace(x1,x2,Nx)
+          print(len(x_value))
+          y_value = m*x_value+c
+
+          land_old = map.is_land(x_value[0],y_value[0])  
+
+          for k in range(len(x_value)):
+              land_new = map.is_land(x_value[k],y_value[k])
+              if (land_new<>land_old):
+                 S_int.append((x_value[k],y_value[k]))
+              land_old = land_new
+      return S_int      
+              
+
+
+  def gridLine(self,S,llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42,N_row=668,N_column=223):
+            
+      map = Basemap(resolution='h',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
+      
+      x = np.linspace(llcrnrlon,urcrnrlon,N_column,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(llcrnrlat,urcrnrlat,N_row,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      line = np.zeros((N_row-1,N_column-1),dtype=int)
+
+      #map.is_land(x_value[k],y_value[i]) 
+
+      for s in S:
+
+          m = (s[0][1] - s[1][1])/(s[0][0] - s[1][0])
+          c = s[0][1] - m*s[0][0]
+
+          y_line = m*x_value + c
+
+          #map.is_land(x_value[k],y_value[i])
+          land_prev = map.is_land(x_value[0],y_value[0])   
+
+          for k in range(len(x_value)):
+              land_new = map.is_land(x_value[k],y_line[k])
+ 
+              index_x = k
+              index_y = np.searchsorted(y_value,y_line[k])
+              
+              if land_new <> land_prev:
+
+                  if (index_x == N_column):
+                     index_x = index_x - 2
+                  elif (index_x > 0):
+                     index_x = index_x - 1
+           
+                  if (index_y == N_row):
+                     index_y = index_y - 2
+                  elif (index_y > 0):
+                     index_y = index_y - 1
+ 
+                  line[index_y,index_x]=1
+              land_prev = land_new
+
+      map.imshow(line)
+      map.drawcoastlines()
+      plt.show()
+
+           
+ 
+
+
   def gridData_to_2DMap(self,file_name="8monthsAIS.txt",N=10001,v=1000000,file_save='TwoDGrid.sav'):
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
@@ -73,6 +171,110 @@ class SClass():
       fac = 255.0/max_v
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
+
+  def lineEstimation(self,x1,x2,y1,y2):
+
+      m = (y2-y1)/(x2-x1)
+      c = y1-m*x1
+
+      return m,c
+
+  def swap(self,a,b):
+      if a > b:
+         t = a
+         a = b
+         b = t
+      return a,b
+
+      #if (x1 > x2):
+      #   t = x1
+      #   x1 = x2
+      #   x2 = t
+
+  def find_next_water_pixel(self,x_value,y_value,counter,map):
+      counter = counter + 1
+      while (counter < len(x_value)):
+            if not map.is_land(x_value[counter],y_value[counter]):
+               return x_value[counter],y_value[counter],counter 
+            else: 
+               counter = counter + 1
+
+      return -1,-1,-1  
+
+  def find_next_land_pixel(self,x_value,y_value,counter,map):
+      counter = counter + 1
+      while (counter < len(x_value)):
+            if map.is_land(x_value[counter],y_value[counter]):
+               #return x_value[counter-1],y_value[counter-1],counter-1 
+               return x_value[counter],y_value[counter],counter 
+            else: 
+               counter = counter + 1
+
+      return -1,-1,-1  
+
+  def divideIntoLineSegments(self,s,N,llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42):
+      map = Basemap(resolution='h',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
+      map.drawcoastlines()
+      S = []
+      counter = 0
+      proc = True
+       
+      x1 = s[0][0]
+      x2 = s[1][0]
+      
+      y1 = s[0][1]
+      y2 = s[1][1]
+
+      m,c = self.lineEstimation(x1,x2,y1,y2)
+
+      dx = np.absolute(x2-x1)
+      dy = np.absolute(y2-y1)
+
+      if (dx < dy):
+         x1,x2 = self.swap(x1,x2)
+         x_value = np.linspace(x1,x2,N)
+         y_value = m*x_value+c
+      else:
+         y1,y2 = self.swap(y1,y2)
+         y_value = np.linspace(y1,y2,N)
+         x_value = (y_value-c)/m 
+
+      map.plot(x_value,y_value,"rx")
+      plt.show()
+
+      if not map.is_land(x_value[0],y_value[0]):
+         x_s = x_value[0]
+         y_s = y_value[0]
+      else:
+         x_s, y_s, counter = self.find_next_water_pixel(x_value,y_value,counter,map)
+         if counter == -1:
+            return S
+      print("x_value = "+str(len(x_value)))
+      while (counter < len(x_value)):
+            print("x_value1 = "+str(len(x_value)))
+            x_e,y_e,counter = self.find_next_land_pixel(x_value,y_value,counter,map) 
+            print("x_value2 = "+str(len(x_value)))
+            if counter == -1:
+               x_e = x_value[-1]
+               y_e = y_value[-1]
+               s = ((x_s,y_s),(x_e,y_e))
+               S.append(s) 
+               return S
+            else:
+               s = ((x_s,y_s),(x_e,y_e))
+               S.append(s)  
+            print("x_value3 = "+str(len(x_value)))
+            x_s, y_s, counter = self.find_next_water_pixel(x_value,y_value,counter,map)
+            if counter == -1:
+               return S
+            print("x_value3 = "+str(len(x_value)))
+    
+      x_e = x_value[-1]
+      y_e = y_value[-1]
+      s = ((x_s,y_s),(x_e,y_e))
+      S.append(s) 
+      return S   
+
 
   def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
@@ -146,8 +348,7 @@ class SClass():
       skeleton = skeletonize(level)
       map.imshow(level)
       plt.show()
-
-      
+ 
 
       from matplotlib import cm
       from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
@@ -160,14 +361,14 @@ class SClass():
       plt.show()
       plt.close()
       
-     
+      S_land = []
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
           print("y0 = "+str(y0))
 
           y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
           print("y1 = "+str(y1))
-
+          S_land.append(((0,sub_m_copy.shape[1]), (y0, y1)))
           plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
           #break
       plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
@@ -177,16 +378,50 @@ class SClass():
 
       map.imshow(old)
       map.drawcoastlines()
+      S = []
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
+          
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
           y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
-          print("y1 = "+str(dy*y1))
-          print("y2 = "+str(dy*y0))
+
+          S.append(((22,42-1*dy*y0),(30,42-1*dy*y1)))
+          #print("y1 = "+str(dy*y1))
+          #print("y2 = "+str(dy*y0))
           map.plot((22, 30), (42-1*dy*y0, 42-1*dy*y1), '-r')
           #break
+      #plt.show()
+      
+      from lsi import intersection
+
+      # S is a list of tuples of the form: ((x,y), (x,y))
+      #S = [((0,1),(2,1)),((0,2),(1,1))]
+      
+      i = intersection(S) 
+      print(i.keys())
+      
+      print(i)
+
+      for s in i.keys():
+          map.plot(s[0],s[1],"rs")
+      #plt.show()  
+
+      S_int = self.intersectionsLand(S)
+      for s in S_int:
+          map.plot(s[0],s[1],"bs")
+      #plt.show() 
+
+      for s in S:
+          S_new = self.divideIntoLineSegments(s,5000,llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42) 
+          print "S_new = ",S_new 
+          for s in S_new:
+              map.plot((s[0][0],s[1][0]),(s[0][1],s[1][1]),"g")
+              map.plot(s[0][0],s[0][1],"gs")
+ 
+              map.plot(s[1][0],s[1][1],"ms")
+ 
+      
       plt.show()
-
-
+      
       
 
   def followLine(self, p, q, two_dim_array, max_points = 100):
