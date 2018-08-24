@@ -57,7 +57,70 @@ class SClass():
               if (land_new<>land_old):
                  S_int.append((x_value[k],y_value[k]))
               land_old = land_new
-      return S_int      
+      return S_int  
+
+
+  def houghtransformbrightness(self,mat,b_level=0.6):
+      plt.show()
+      M = mat.shape[0]
+      N = mat.shape[1]
+
+      if (M < N):
+         t = M
+         M = N
+         N = t
+
+      max_M = 2*(int(np.ceil(np.sqrt(2)*M)))+1
+      A = np.zeros((max_M,max_M),dtype=int)
+
+      phi = np.linspace(-np.pi/2,np.pi/2,max_M)
+      rv = np.arange(0,max_M)-(max_M/2)
+       
+
+      sorted_pixels_idx = np.dstack(np.unravel_index(np.argsort(mat.ravel()), (mat.shape[0],mat.shape[1])))
+
+      sorted_pixels_idx = sorted_pixels_idx[0,mat[sorted_pixels_idx[0,:,0],sorted_pixels_idx[0,:,1]]<>0,:] # remove zero pixels
+ 
+      print(str(sorted_pixels_idx.shape))
+
+      #sorted_pixels_idx = sorted_pixels_idx[::-1,:] #big to small
+
+      C = int(sorted_pixels_idx.shape[0]*b_level) 
+
+      sorted_pixels_idx = sorted_pixels_idx[:C,:] # remove faint pixels
+      print(str(C))
+
+      Cp = max_M/2
+      for k in range(sorted_pixels_idx.shape[0]):
+          print("k="+str(k))
+          y = sorted_pixels_idx[k,0] #row
+          x = sorted_pixels_idx[k,1] #column
+          rho = x*np.cos(phi)+y*np.sin(phi)
+
+          #plt.plot(phi,rho)
+          #plt.show()
+          
+          for c in range(len(phi)):
+              r = np.round(rho[c]).astype(int)+Cp
+              A[r,c] += mat[y,x]
+
+      plt.imshow(A)
+      plt.show()   
+      return A,phi,rv
+           
+
+      
+
+
+      
+
+      
+
+      #y = y[0,x[y[0,:,0],y[0,:,1]]<>0,:]
+
+
+       
+          
               
 
 
@@ -306,8 +369,25 @@ class SClass():
       sub_m = np.log(sub_m)
       sub_m = self.convertMatToGray(sub_m)
       sub_m = sub_m*m
-
+      
+      
       old = np.copy(sub_m)
+      h,theta,d = self.houghtransformbrightness(old[::-1,:])
+      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+      S_land = []
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=10, min_angle=10, threshold=0.5*np.max(h),num_peaks=20)):#numpeaks
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          print("y0 = "+str(y0))
+
+          y1 = (dist - sub_m.shape[1] * np.cos(angle)) / np.sin(angle)
+          print("y1 = "+str(y1))
+          S_land.append(((0,sub_m.shape[1]), (y0, y1)))
+          plt.plot((0, sub_m.shape[1]), (y0, y1), '-r')
+          #break
+      plt.imshow(sub_m[::-1,:],cmap=plt.cm.get_cmap("jet"))
+      #plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close() 
 
       #FILTER OR NOT
       #from skimage.morphology import disk
