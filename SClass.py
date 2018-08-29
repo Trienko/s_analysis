@@ -60,7 +60,7 @@ class SClass():
       return S_int  
 
 
-  def houghtransformbrightness(self,mat,b_level=0.6):
+  def houghtransformbrightness(self,mat,b_level=0.8):
       plt.show()
       M = mat.shape[0]
       N = mat.shape[1]
@@ -83,7 +83,7 @@ class SClass():
  
       print(str(sorted_pixels_idx.shape))
 
-      #sorted_pixels_idx = sorted_pixels_idx[::-1,:] #big to small
+      sorted_pixels_idx = sorted_pixels_idx[::-1,:] #big to small
 
       C = int(sorted_pixels_idx.shape[0]*b_level) 
 
@@ -338,6 +338,202 @@ class SClass():
       S.append(s) 
       return S   
 
+  def testMedian(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
+      map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
+      map.drawcoastlines()
+
+      x = np.linspace(-180,180,N,endpoint=True)
+      dx = np.absolute(x[1]-x[2])
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      dy = np.absolute(y[1]-y[2])
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      index_x_1 = np.searchsorted(x,22)-1
+      index_x_2 = np.searchsorted(x,30)-1
+
+      index_y_1 = np.searchsorted(y,30)-1
+      index_y_2 = np.searchsorted(y,42)-1
+
+      m = joblib.load(mask_file)
+      m_old = np.copy(m)
+      m = np.absolute(m-1)
+      matriks = joblib.load(file_save)
+      sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      sub_m_old = np.copy(sub_m)
+      matriks=''
+      print(sub_m.shape)
+      
+      sub_m = np.log(sub_m)
+      sub_m = self.convertMatToGray(sub_m)
+      sub_m_old = np.copy(sub_m)
+      from skimage.morphology import disk
+      from skimage.filters.rank import median
+      from skimage import filters
+      #from skimage.filters.rank import gaussian 
+      #sub_m = filters.sobel(sub_m)
+      med = median(sub_m, disk(3)) 
+      med = (sub_m-med)
+
+      med[med==0] = 255
+      med = (med-255)*(-1)
+      med = med<200
+      #med = filters.gaussian(med, sigma=0.5)
+      #med = med<0.5
+       
+      from skimage.morphology import erosion, dilation, opening, closing, white_tophat,binary_opening,thin
+      from skimage.morphology import black_tophat, skeletonize, convex_hull_image
+      from skimage.morphology import disk
+      selem = disk(1)
+      eroded = thin(med)
+
+      #med = filters.sobel(med)
+      #med = med*m
+      
+      #med = (med-np.amax(med))*(-1)
+      #med[sub_m_old == 0] = 0
+      #med = med*m
+      from matplotlib import cm
+      #med = self.convertMatToGray(med) 
+      #from skimage import feature
+      #edges1 = feature.canny(med,sigma=2) 
+      #med_t = med>50
+      map.imshow(eroded,cmap=cm.gray)
+      plt.show()
+
+      from skimage.filters import try_all_threshold
+
+      med = self.convertMatToGray(med)
+
+      
+
+      fig, ax = try_all_threshold(med, figsize=(10, 8), verbose=False)
+      plt.show()
+
+      #med[m_old==1] = 0
+      #map.imshow(np.absolute(med))
+      
+      xx,yy = np.meshgrid(x_value[index_x_1:index_x_2],y_value[index_y_1:index_y_2])
+      #from scipy import interpolate  
+      #f = interpolate.interp2d(x_value[index_x_1:index_x_2], y_value[index_y_1:index_y_2], med, kind='cubic')
+      #x_new = np.linspace(x_value[index_x_1],x_value[index_x_2],2000)
+      #y_new = np.linspace(y_value[index_y_1],y_value[index_y_2],2000) 
+      #xx_new,yy_new = np.meshgrid(x_new,y_new)
+      #m_new = f(x_new,y_new)
+      
+
+      #cs = map.contourf(xx,yy,med,3)
+      #map.imshow(med,interpolation="nearest")
+      #plt.show()
+      #plt.show() 
+      #map.drawcoastlines()  
+      #med[med==0] = 1
+
+      X = np.reshape(med,(med.shape[0]*med.shape[1],1))
+
+      X2 = X[X<>0]
+
+      X2 = np.reshape(X2,(len(X2),1))
+
+      
+      from sklearn.cluster import KMeans
+      
+      kmeans = KMeans(n_clusters=3, random_state=0).fit(X2)
+      
+      #KMeans(n_clusters=2, random_state=0).fit(X)
+      
+      
+      X[X<>0] = kmeans.labels_+1   
+  
+      #X = X==2
+
+      med = np.reshape(X,(med.shape[0],med.shape[1])) 
+
+      #med = med < 0.4
+      #plt.show()
+      #v = np.absolute(med.ravel())
+      #v = v[v<>0]
+      #histo = plt.hist(v)
+      #plt.show()
+      #sub_m = sub_m*m
+      #from skimage import filters
+      #med = filters.sobel(med)
+      
+      #med = median(med, disk(1))
+      #med[med==0] = 255
+      #med = med<150
+      
+      #map.imshow(np.absolute(med))
+      #plt.show() 
+      map.drawcoastlines()
+      cs = map.contour(xx,yy,med,3)
+      plt.show()
+      
+      map.drawcoastlines()
+
+      c_v = ["b","r","m","c","g","k","b","r"]
+
+      for i in range(1,2):
+
+          paths = cs.collections[i].get_paths()
+          k = 0      
+
+          for k in range(len(paths)):
+              v = paths[k].vertices
+              if len(v[:,0]) > 50:
+           
+                 x = v[:,0]
+                 y = v[:,1]
+
+                 #hull = ConvexHull(v)
+                 #for simplex in hull.simplices:
+                 #plt.plot(v[simplex, 0], v[simplex, 1], c=c_v[4])
+
+                 map.plot(x,y,c=c_v[i])
+                 #plt.Polygon(segments[0], fill=False, color='w')
+              k = k+1
+              if k%100 == 0:
+                print(str(k))
+                print(str(len(paths)))
+      plt.show()
+      
+
+      from matplotlib import cm
+      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+      sub_m_copy = med[::-1,:]
+      # Classic straight-line Hough transform
+      h, theta, d = hough_line(sub_m_copy)
+      
+      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+     
+      #map.drawcoastlines()
+      S_land = []
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=10, min_angle=20, threshold=0.6*np.max(h),num_peaks=10)):#numpeaks
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          print("y0 = "+str(y0))
+
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          print("y1 = "+str(y1))
+          S_land.append(((0,sub_m_copy.shape[1]), (y0, y1)))
+          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
+          #break
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      #plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close() 
+      
+      
+      #histo = plt.hist(np.absolute(med.ravel()), bins=np.arange(0, 256))
+      #plt.show()
+      #sub_m = sub_m*m
+
 
   def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
@@ -369,13 +565,32 @@ class SClass():
       sub_m = np.log(sub_m)
       sub_m = self.convertMatToGray(sub_m)
       sub_m = sub_m*m
+
+      from skimage import data 
+      from skimage.morphology import disk
+      from skimage.filters.rank import median
+      img = np.copy(sub_m)
+      med = median(img, disk(2)) 
+      #map.imshow(sub_m-med,vmax=5, vmin = 0)
+      temp = sub_m-med
+      #temp[temp<=0] = 0
+      #temp[np.logicaltemp>0] = 1
+      #map.imshow(temp)      
+      #plt.show()
+      #histo = plt.hist(np.absolute(sub_m.ravel()-med.ravel()), bins=np.arange(0, 256))
+      #plt.show()
+      temp[temp>30] = 0
+      temp[temp<0] = 0
+      #temp[temp<>0] = 1
+      sub_m = np.copy(temp)
       
       
+      map.drawcoastlines()
       old = np.copy(sub_m)
       h,theta,d = self.houghtransformbrightness(old[::-1,:])
       from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
       S_land = []
-      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=10, min_angle=10, threshold=0.5*np.max(h),num_peaks=20)):#numpeaks
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=10, min_angle=10, threshold=0.5*np.max(h),num_peaks=5)):#numpeaks
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
           print("y0 = "+str(y0))
 
@@ -388,7 +603,7 @@ class SClass():
       #plt.axes().set_aspect('auto', adjustable='box')
       plt.show()
       plt.close() 
-
+      
       #FILTER OR NOT
       #from skimage.morphology import disk
       #from skimage.filters.rank import median
@@ -407,7 +622,7 @@ class SClass():
       
       from sklearn.cluster import KMeans
       
-      kmeans = KMeans(n_clusters=4, random_state=0).fit(X2)
+      kmeans = KMeans(n_clusters=3, random_state=0).fit(X2)
       
       #KMeans(n_clusters=2, random_state=0).fit(X)
       
@@ -415,24 +630,25 @@ class SClass():
       X[X<>0] = kmeans.labels_+1   
 
       sub_m_copy = np.reshape(X,(sub_m.shape[0],sub_m.shape[1]))
+      sub_m_copy = temp
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
       map.drawcoastlines()
       #threshold 
       #sub_copy
       #map.imshow(sub_m_copy)
       level = np.zeros(sub_m_copy.shape,dtype=sub_m_copy.dtype)
-      level[sub_m_copy==3] = 1
+      #level[sub_m_copy==3] = 1
       
       from skimage.morphology import skeletonize
       # perform skeletonization
-      skeleton = skeletonize(level)
-      map.imshow(level)
-      plt.show()
+      #skeleton = skeletonize(level)
+      #map.imshow(level)
+      #plt.show()
  
 
       from matplotlib import cm
       from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
-      sub_m_copy = skeleton[::-1,:]
+      sub_m_copy = sub_m_copy[::-1,:]
       # Classic straight-line Hough transform
       h, theta, d = hough_line(sub_m_copy)
       
@@ -442,7 +658,7 @@ class SClass():
       plt.close()
       
       S_land = []
-      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=20)):#numpeaks
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
           print("y0 = "+str(y0))
 
@@ -1094,7 +1310,7 @@ if __name__ == "__main__":
    #s.drawWorldMap()
    #s.plotEU()
    #s.plotEUGray()
-   s.applyKMeans()
+   s.testMedian()
    #mask = s.createMask()
    #edges = s.findEdges(mask)
    #e_mask = s.expandMask(edges,3)
