@@ -339,6 +339,11 @@ class SClass():
       return S   
 
   def testMedian(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
+      from skimage import data, segmentation, color
+      from skimage.future import graph
+      from matplotlib import pyplot as plt
+
+
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
       map.drawcoastlines()
 
@@ -373,22 +378,99 @@ class SClass():
       from skimage.morphology import disk
       from skimage.filters.rank import median
       from skimage import filters
+      from skimage.feature import blob_dog, blob_log, blob_doh
       #from skimage.filters.rank import gaussian 
       #sub_m = filters.sobel(sub_m)
-      med = median(sub_m, disk(3)) 
-      med = (sub_m-med)
+      med = sub_m*m
+      med = median(med, disk(5)) 
+      med = sub_m-med
+      med = np.absolute(med-np.amax(med))
+      #from matplotlib import cm
+      #med = filters.gaussian(med, sigma=0.5)
+      #med[sub_m_old==0] = np.amin(med)
+      #med[m==0] = np.amin(med)
+      #med = med<0.5
+      #med = np.absolute(med - np.amax(med))
+      med = med<150
+      med[sub_m_old==0] = np.amin(med)
+      med[m==0] = np.amin(med)
+      map.imshow(med)
+      plt.show()
+      map.drawcoastlines()
+       
+      from skimage.morphology import erosion, dilation, opening, closing, white_tophat,binary_opening,thin
+      from skimage.morphology import black_tophat, skeletonize, convex_hull_image
+      from skimage.morphology import disk,square
+      selem = square(2)
+      eroded = erosion(med,selem)
+      selem = square(2)
+      eroded = erosion(med,selem)
+      map.imshow(eroded)
+      plt.show()
+      
+      #med = self.convertMatToGray(med)
+      #map.imshow(med)
+      #plt.show()
 
-      med[med==0] = 255
-      med = (med-255)*(-1)
-      med = med<200
+      #from skimage.morphology import extrema
+      #maxima = extrema.h_maxima(med,50)
+      #map.drawcoastlines()
+      #map.imshow(maxima,cmap=cm.jet)
+      #plt.show()
+
+      #fig, ax = plt.subplots() 
+      #blobs_doh = blob_doh(med, max_sigma=30, threshold=.01)
+      #ax.imshow(med) 
+      #for blob in blobs_doh:
+      #    print(blob)
+      #    y, x, r = blob
+      #    c = plt.Circle((x, y), r, color="r", linewidth=5, fill=False)
+      #    ax.add_patch(c)
+      #plt.show()
+      #med = self.convertMatToGray(med)
+      #labels = segmentation.slic(med, compactness=0.01, n_segments=3,enforce_connectivity=False)
+      #labels = labels + 1
+      #map.imshow(labels)
+      #out1 = color.label2rgb(labels, med, kind='avg') 
+      #map.imshow(out1)
+      #plt.show()
+      #map.drawcoastlines()
+      #rag = graph.rag_mean_color(med, labels, mode="similarity")
+
+      #labels2 = graph.cut_normalized(labels, rag)
+      #out2 = color.label2rgb(labels2, med, kind='avg')
+
+
+
+
+      #print("hallo="+str(np.amin(med)))
+      #print("hallo="+str(np.amax(med)))  
+      
+      #label_rgb = color.label2rgb(labels, med, kind='avg')
+      #map.imshow(med)
+      
+      #med[sub_m_old==0] = 0
+      #med = med>50
+      #med[sub_m_old==0]=0
+      #med = med*m 
+
+      #from matplotlib import cm
+      #map.imshow(med,cmap=cm.hot)
+      #plt.show()
+
+      '''
+      #histo = plt.hist(np.absolute(sub_m.ravel()-med_old.ravel())*m.ravel(), bins=np.arange(0, 256))
+      #plt.show() 
+
+      
       #med = filters.gaussian(med, sigma=0.5)
       #med = med<0.5
        
       from skimage.morphology import erosion, dilation, opening, closing, white_tophat,binary_opening,thin
       from skimage.morphology import black_tophat, skeletonize, convex_hull_image
-      from skimage.morphology import disk
+      from skimage.morphology import disk,square
       selem = disk(1)
-      eroded = thin(med)
+      eroded = erosion(med,selem)
 
       #med = filters.sobel(med)
       #med = med*m
@@ -396,21 +478,26 @@ class SClass():
       #med = (med-np.amax(med))*(-1)
       #med[sub_m_old == 0] = 0
       #med = med*m
-      from matplotlib import cm
+      #from matplotlib import cm
       #med = self.convertMatToGray(med) 
       #from skimage import feature
       #edges1 = feature.canny(med,sigma=2) 
       #med_t = med>50
+      #eroded = eroded<0.5
+      #eroded = filters.gaussian(eroded, sigma=1.0)
       map.imshow(eroded,cmap=cm.gray)
+      print(np.amin(eroded))
       plt.show()
+      histo = plt.hist(eroded, bins=np.arange(0, 256))
+      plt.show() 
 
       from skimage.filters import try_all_threshold
 
-      med = self.convertMatToGray(med)
+      #eroded = self.convertMatToGray(eroded)
 
       
 
-      fig, ax = try_all_threshold(med, figsize=(10, 8), verbose=False)
+      fig, ax = try_all_threshold(eroded.ravel(), figsize=(10, 8), verbose=False)
       plt.show()
 
       #med[m_old==1] = 0
@@ -533,7 +620,7 @@ class SClass():
       #histo = plt.hist(np.absolute(med.ravel()), bins=np.arange(0, 256))
       #plt.show()
       #sub_m = sub_m*m
-
+      '''
 
   def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
