@@ -1296,7 +1296,53 @@ class SClass():
       #plt.show()
 
       
+  def shapely_test(self):
+      from shapely.ops import polygonize
+      import pprint
+      #from descartes.patch import PolygonPatch 
+      lines = [((0, 0), (1, 1)),
+      ((0, 0), (0, 1)),
+      ((0, 1), (1, 1)),
+      ((1, 1), (1, 0)),
+      ((1, 0), (0, 0))]
 
+      p = list(polygonize(lines)) 
+      pprint.pprint(list(polygonize(lines)))
+      #fig = plt.figure(1, dpi=90)
+      #ax = fig.add_subplot(122)
+ 
+      
+
+      for polygon in p:
+          c = np.array(polygon.exterior.coords)
+          print(c.shape)
+          print(c)
+          plt.plot(c[:,0],c[:,1])
+          #plot_coords(ax, polygon.exterior)
+          #patch = PolygonPatch(polygon, alpha=0.5, zorder=2)
+          #ax.add_patch(patch)
+
+      plt.show()
+
+  def test_poly_mask(self):
+      import pylab as plt
+      import numpy as np
+      from matplotlib.path import Path
+
+      width, height=2000, 2000
+
+      polygon=[(0.1*width, 0.1*height), (0.15*width, 0.7*height), (0.8*width, 0.75*height), (0.72*width, 0.15*height)]
+      poly_path=Path(polygon)
+
+      x, y = np.mgrid[:height, :width]
+      coors=np.hstack((x.reshape(-1, 1), y.reshape(-1,1))) # coors.shape is (4000000,2)
+
+      mask = poly_path.contains_points(coors)
+      plt.imshow(mask.reshape(height, width))
+      plt.show()
+
+      
+   
 
   def plotEU(self,file_save='TwoDGrid.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001):
       map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
@@ -1397,7 +1443,8 @@ if __name__ == "__main__":
    #s.drawWorldMap()
    #s.plotEU()
    #s.plotEUGray()
-   s.testMedian()
+   s.shapely_test()
+   #s.testMedian()
    #mask = s.createMask()
    #edges = s.findEdges(mask)
    #e_mask = s.expandMask(edges,3)
