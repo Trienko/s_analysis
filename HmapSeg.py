@@ -113,7 +113,9 @@ class HmapSeg():
       water_mask = joblib.load(water_mask)  
       
       sub_m = np.log(sub_m+1)
+      sub_m_rev = sub_m[::-1,:]
       sub_m = self.convertMatToGray(sub_m)
+      #sub_m_rev = sub_m[::-1,:]
       map.imshow(sub_m)
       plt.show()
       
@@ -197,11 +199,12 @@ class HmapSeg():
           grid = poly_path.contains_points(points)
           mask = grid.reshape((ny,nx))
 
-          plt.imshow(mask)
-          plt.show() 
-          print(counter)
+          #plt.imshow(mask)
+          #plt.show() sub_m_rev = sub_m[::-1,:]
+          #print(counter)
           poly_mask[mask] = counter
           counter += 1
+      
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
           print("y0 = "+str(y0))
@@ -212,11 +215,37 @@ class HmapSeg():
           plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')   
       
       water_mask = water_mask[::-1,:]
-      poly_mask[water_mask==0] = -1
+      cost_line_mask = cost_line_mask[::-1,:]
+      poly_mask[water_mask==0] = -2
+      poly_mask[cost_line_mask==0] += 1 
+      cost_line_mask[poly_mask==-1] = 1
+      poly_mask[poly_mask == -1] = -2
+      poly_mask[cost_line_mask==0] = -1
       plt.imshow(poly_mask)
+      
       plt.show()
-       
 
+      segmentation_map = np.zeros(poly_mask.shape)
+
+      for k in range(counter):
+          segmentation_map[poly_mask==k] = np.average(sub_m_rev[poly_mask==k])
+      
+
+      segmentation_map[poly_mask==-1] = np.average(sub_m_rev[poly_mask==-1])
+      segmentation_map[poly_mask==-2] = 0
+
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          print("y0 = "+str(y0))
+
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          print("y1 = "+str(y1))
+          S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
+          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')   
+       
+      plt.imshow(segmentation_map)
+      
+      plt.show()
  
       
 
