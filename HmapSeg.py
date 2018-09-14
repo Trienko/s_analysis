@@ -87,6 +87,11 @@ class HmapSeg():
 
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       map.drawcoastlines()
+      parallels = np.linspace(llcrnrlat,urcrnrlat,5)
+      map.drawparallels(parallels,labels=[1,0,0,0])
+      meridians = np.linspace(llcrnrlon,urcrnrlon,5)
+      map.drawmeridians(meridians,labels=[0,0,0,1])
+
 
       x = np.linspace(-180,180,N,endpoint=True)
       dx = np.absolute(x[1]-x[2])
@@ -114,9 +119,12 @@ class HmapSeg():
       
       sub_m = np.log(sub_m+1)
       sub_m_rev = sub_m[::-1,:]
-      sub_m = self.convertMatToGray(sub_m)
+      
       #sub_m_rev = sub_m[::-1,:]
-      map.imshow(sub_m)
+      cs = map.imshow(sub_m)
+      sub_m = self.convertMatToGray(sub_m)  
+      cbar = map.colorbar(cs,location='bottom',pad="5%")
+      cbar.set_label('log(#)')
       plt.show()
       
       
@@ -246,8 +254,37 @@ class HmapSeg():
       plt.imshow(segmentation_map)
       
       plt.show()
- 
+
+      map.drawcoastlines()
+      segmentation_map = np.zeros(poly_mask.shape)
+
+      for k in range(counter):
+          segmentation_map[poly_mask==k] = np.average(sub_m_rev[poly_mask==k])
       
+
+      segmentation_map[poly_mask==-1] = np.average(sub_m_rev[poly_mask==-1])
+      segmentation_map[poly_mask==-2] = 0
+      
+      S = []
+      #for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
+          
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+
+          S.append(((22,42-1*dy*y0),(30,42-1*dy*y1)))
+          #print("y1 = "+str(dy*y1))
+          #print("y2 = "+str(dy*y0))
+          map.plot((22, 30), (42-1*dy*y0, 42-1*dy*y1), '-r')
+          #break
+      cs = map.imshow(segmentation_map[::-1,:])
+      parallels = np.linspace(llcrnrlat,urcrnrlat,5)
+      map.drawparallels(parallels,labels=[1,0,0,0])
+      meridians = np.linspace(llcrnrlon,urcrnrlon,5)
+      map.drawmeridians(meridians,labels=[0,0,0,1])
+      cbar = map.colorbar(cs,location='bottom',pad="5%")
+      cbar.set_label('log(#)')
+      plt.show()
 
       #for polygon in p:
       #    c = np.array(polygon.exterior.coords)
