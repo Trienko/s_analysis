@@ -12,6 +12,7 @@ from skimage.morphology import erosion, dilation, opening, closing, white_tophat
 from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
 from shapely.ops import polygonize
 import pprint
+#llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
 
 class HmapSeg():
 
@@ -83,7 +84,7 @@ class HmapSeg():
 
 
 
-  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10):
+  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10):
 
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       map.drawcoastlines()
@@ -278,7 +279,9 @@ class HmapSeg():
           #print("y2 = "+str(dy*y0))
           map.plot((llcrnrlon, urcrnrlon), (urcrnrlat-1*dy*y0, urcrnrlat-1*dy*y1), '-r')
           #break
-      cs = map.imshow(segmentation_map[::-1,:])
+      #cs = map.imshow(segmentation_map[::-1,:])
+      cs = map.imshow(sub_m)
+
       parallels = np.linspace(llcrnrlat,urcrnrlat,5)
       map.drawparallels(parallels,labels=[1,0,0,0])
       meridians = np.linspace(llcrnrlon,urcrnrlon,5)
@@ -711,8 +714,8 @@ class HmapSeg():
 
 
   #555, 417    
-  def createMask(self,llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45,N_row=555,N_column=417 ):
-      map = Basemap(resolution='h',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
+  def createMask(self,llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45,N_row=555+1,N_column=417+1,resolution='h'):
+      map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       
       
       x = np.linspace(llcrnrlon,urcrnrlon,N_column,endpoint=True)
@@ -953,16 +956,16 @@ class HmapSeg():
 if __name__ == "__main__":
    s = HmapSeg()
    #s.drawWorldMap()
-   s.plotEU()
+   #s.plotEU()
    #s.plotEUGray()
-   #s.polygonSegmentation()
+   s.polygonSegmentation()
    #s.test_poly_mask()
    #s.testMedian()
-   mask = s.createMask()
-   joblib.dump(mask, "water_mask.sav") 
-   edges = s.findEdges(mask)
-   e_mask = s.expandMask(edges,3)
-   joblib.dump(e_mask, "mask.sav") 
+   #mask = s.createMask()
+   #joblib.dump(mask, "water_mask.sav") 
+   #edges = s.findEdges(mask)
+   #e_mask = s.expandMask(edges,3)
+   #joblib.dump(e_mask, "mask.sav") 
    #x = np.diag(np.ones((8,),dtype=int)) 
    #m,p = s.followLine(3,5,x+1)
    #print(p)
