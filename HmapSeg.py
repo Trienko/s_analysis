@@ -266,16 +266,17 @@ class HmapSeg():
       segmentation_map[poly_mask==-2] = 0
       
       S = []
+      #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
       #for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
           
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
           y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
 
-          S.append(((22,42-1*dy*y0),(30,42-1*dy*y1)))
+          S.append(((llcrnrlon,urcrnrlat-1*dy*y0),(urcrnrlon,urcrnrlat*dy*y1)))
           #print("y1 = "+str(dy*y1))
           #print("y2 = "+str(dy*y0))
-          map.plot((22, 30), (42-1*dy*y0, 42-1*dy*y1), '-r')
+          map.plot((llcrnrlon, urcrnrlon), (urcrnrlat-1*dy*y0, urcrnrlat-1*dy*y1), '-r')
           #break
       cs = map.imshow(segmentation_map[::-1,:])
       parallels = np.linspace(llcrnrlat,urcrnrlat,5)
