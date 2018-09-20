@@ -83,7 +83,7 @@ class HmapSeg():
 
 
 
-  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10):
+  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10):
 
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       map.drawcoastlines()
@@ -710,8 +710,8 @@ class HmapSeg():
 
 
 
-    
-  def createMask(self,llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42,N_row=668,N_column=223):
+  #555, 417    
+  def createMask(self,llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45,N_row=555,N_column=417 ):
       map = Basemap(resolution='h',llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       
       
@@ -849,23 +849,25 @@ class HmapSeg():
       
    
 
-  def plotEU(self,file_save='TwoDGrid.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001):
-      map = Basemap(resolution='h',llcrnrlon=-15, llcrnrlat=30,urcrnrlon=30, urcrnrlat=60)
+  def plotEU(self,file_save='TwoDGrid.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001,llcrnrlon=0,llcrnrlat=35,urcrnrlon=15,urcrnrlat=45):
+      map = Basemap(resolution='h',llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat)
       map.drawcoastlines()
 
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
       x_value = x_value[:-1]
+      
+      #llcrnrlon
 
       y = np.linspace(-90,90,N,endpoint=True)
       y_value = y + (y[1]-y[2])/2.0
       y_value = y_value[:-1]
 
-      index_x_1 = np.searchsorted(x,-15)-1
-      index_x_2 = np.searchsorted(x,30)-1
+      index_x_1 = np.searchsorted(x,llcrnrlon)-1
+      index_x_2 = np.searchsorted(x,urcrnrlon)-1
 
-      index_y_1 = np.searchsorted(y,30)-1
-      index_y_2 = np.searchsorted(y,60)-1
+      index_y_1 = np.searchsorted(y,llcrnrlat)-1
+      index_y_2 = np.searchsorted(y,urcrnrlat)-1
 
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
@@ -874,7 +876,11 @@ class HmapSeg():
       sub_m = np.log(sub_m)
       
       sub_m_copy = np.copy(sub_m)
-      
+    
+      map.imshow(sub_m)
+      print(sub_m.shape)
+      plt.show()
+      '''
       sub_m_copy[sub_m<2] = 0
       
       X = np.reshape(sub_m_copy,(sub_m_copy.shape[0]*sub_m_copy.shape[1],1))
@@ -939,23 +945,24 @@ class HmapSeg():
       
       plt.savefig(image_name)
       
-      joblib.dump(sub_m, "EU.sav")   
+      joblib.dump(sub_m, "EU2.sav")   
+      '''
         
       
 
 if __name__ == "__main__":
    s = HmapSeg()
    #s.drawWorldMap()
-   #s.plotEU()
+   s.plotEU()
    #s.plotEUGray()
-   s.polygonSegmentation()
+   #s.polygonSegmentation()
    #s.test_poly_mask()
    #s.testMedian()
-   #mask = s.createMask()
-   #joblib.dump(mask, "water_mask.sav") 
-   #edges = s.findEdges(mask)
-   #e_mask = s.expandMask(edges,3)
-   #joblib.dump(e_mask, "mask.sav") 
+   mask = s.createMask()
+   joblib.dump(mask, "water_mask.sav") 
+   edges = s.findEdges(mask)
+   e_mask = s.expandMask(edges,3)
+   joblib.dump(e_mask, "mask.sav") 
    #x = np.diag(np.ones((8,),dtype=int)) 
    #m,p = s.followLine(3,5,x+1)
    #print(p)
@@ -1080,7 +1087,7 @@ ax=fig.add_axes([0.1,0.1,0.8,0.8])
 # setup mercator map projection.
 m = Basemap(llcrnrlon=-100.,llcrnrlat=20.,urcrnrlon=20.,urcrnrlat=60.,\
             rsphere=(6378137.00,6356752.3142),\
-            resolution='l',projection='merc',\
+            resolution='l',projection='merc',\def plotEU(self,file_save='TwoDGrid2.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001):
             lat_0=40.,lon_0=-20.,lat_ts=20.)
 # nylat, nylon are lat/lon of New York
 nylat = 40.78; nylon = -73.98
