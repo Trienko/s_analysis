@@ -12,6 +12,8 @@ from skimage.morphology import erosion, dilation, opening, closing, white_tophat
 from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
 from shapely.ops import polygonize
 import pprint
+import configparser
+import sys
 #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
 
 class HmapSeg():
@@ -950,15 +952,93 @@ class HmapSeg():
       
       joblib.dump(sub_m, "EU2.sav")   
       '''
+  def load_config_file(self,file_name="AGEAN.ini"):
+      config = configparser.ConfigParser()
+      config.read(file_name)
+      sections = config.sections() 
+
+      parameter_dictionary = {}
+      '''      
+      llcrnrlon = 22
+      llcrnrlat = 30
+      urcrnrlon = 30 
+      urcrnrlat = 42
+      resolution = h
+
+      [FILENAMES]
+      global_heatmap = TwoDGrid.sav
+      N = 10001
+      large_coast_line_mask= mask.sav
+      water_mask = water_mask.sav
+
+      [GENERAL PARAMETERS]
+      m_size = 5
+      threshold=150
+      o_size = 3
+
+      [HOUGH TRANSFORM PARAMETERS]
+      min_distance=18
+      min_angle=20 
+      h_threshold=0.6
+      num_peaks=10
+      '''
+      int_list = ["N","m_size","threshold","o_size","num_peaks"]
+      float_list = ["min_dist","min_angle","h_threshold","num_peaks","llcrnrlon","llcrnrlat","urcrnrlon","urcrnrlat","urcrnrlat"]
+     
+      for s in sections:
+          for p in config[s]:
+              if p in int_list:   
+                 parameter_dictionary[str(p)] = int(config[s][p])
+              elif p in float_list:
+                 parameter_dictionary[str(p)] = float(config[s][p])
+              else:
+                 parameter_dictionary[str(p)] = str(config[s][p]) 
+
+      return parameter_dictionary
+        
+
+
+#config = configparser.ConfigParser()
+#>>> config.sections()
+#[]
+#>>> config.read('example.ini')
+#['example.ini']
+#>>> config.sections()
+#['bitbucket.org', 'topsecret.server.com']
+#>>> 'bitbucket.org' in config
+#True
+#>>> 'bytebong.com' in config
+#False
+#>>> config['bitbucket.org']['User']
+#'hg'
+#>>> config['DEFAULT']['Compression']
+#'yes'
+#>>> topsecret = config['topsecret.server.com']
+#>>> topsecret['ForwardX11']
+#'no'
+#>>> topsecret['Port']
+#'50022'
+#>>> for key in config['bitbucket.org']:  
+#...     print(key)
+#user
+#compressionlevel
+#serveraliveinterval
+#compression
+#forwardx11
+#>>> config['bitbucket.org']['ForwardX11']
+#'yes'
+
         
       
 
 if __name__ == "__main__":
+   config_file = sys.argv[1]
    s = HmapSeg()
    #s.drawWorldMap()
    #s.plotEU()
    #s.plotEUGray()
-   s.polygonSegmentation()
+   s.load_config_file(file_name=config_file)
+   #s.polygonSegmentation()
    #s.test_poly_mask()
    #s.testMedian()
    #mask = s.createMask()
