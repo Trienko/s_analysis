@@ -85,11 +85,12 @@ class HmapSeg():
       plt.savefig(image_name)
       plt.show()
 
-
-
-  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10,config_file=""):
-
+  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10,config_file="",save_fig=True):
+      dir_name = config_file[:-4]
+      
+    
       #PLOT MAP
+      print("EXTRACTING SUBMAP")
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       map.drawcoastlines()
       parallels = np.linspace(llcrnrlat,urcrnrlat,5)
@@ -119,70 +120,100 @@ class HmapSeg():
       
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
-      sub_m_rev = sub_m[::-1,:] #MAKE COPY OF ORIGINAL WILL USE DURING SEGEMENTATION STAGE
+      
     
       #EXTRACT_WATER_MASK
       water_mask = joblib.load(water_mask)  
       
       #TAKE LOG
       sub_m = np.log(sub_m+1)
-      
+      sub_m_rev = sub_m[::-1,:] #MAKE COPY OF ORIGINAL WILL USE DURING SEGEMENTATION STAGE      
+
       #PLOT SUB-HEATMAP      
       cs = map.imshow(sub_m)
       sub_m = self.convertMatToGray(sub_m)  
       cbar = map.colorbar(cs,location='bottom',pad="5%")
       cbar.set_label('log(#)')
-      plt.show()
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+".png")
+      else:
+         plt.show()
+      plt.close()
       
-      
+      print("MEDIAN FILTER")
+      #MEDIAN FILTER DATA AND BINARY THRESHOLD
       med = sub_m*cost_line_mask #remove coastline data
-      med = median(med, disk(m_size)) #filter data
+      med = median(med, disk(m_size)) #media filter data
       med = sub_m-med #highlight linear tracks --- similar to rfi detection
       
       med = med<threshold #thresholding
 
       med[water_mask==0] = np.amin(med)
       med[cost_line_mask==0] = np.amin(med)
+
       map.drawcoastlines()
       map.imshow(med)
-      plt.show()
       
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+"_binary.png")
+      else:
+         plt.show()
+      plt.close()
        
+      #APPLY MORPHOLOGICAL OPENING
+      print("OPENING")
       selem = square(o_size) #opening
       opened = opening(med,selem)
+      
       map.drawcoastlines()
       map.imshow(opened)
-      plt.show()
-
+      
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+"_opened.png")
+      else:
+         plt.show()
+      plt.close()
+      
       #HOUGH TRANSFORM
+      #################################
+      print("HOUGH TRANSFORM")
       sub_m_copy = opened[::-1,:]
       h, theta, d = hough_line(sub_m_copy)
       
       plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]])#aspect=1/1.5
       plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+"_ht.png")
+      else:
+         plt.show()
       plt.close()
     
       S_land = []
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-          print("y0 = "+str(y0))
 
           y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
-          print("y1 = "+str(y1))
+
           S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
           plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
-          #break
-      plt.imshow(sub_m_copy)
-      #plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
-      plt.close() 
-
       
+      plt.imshow(sub_m_copy)
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+"_ht_lines.png")
+      else:
+         plt.show()
+      plt.close() 
+      #################################
+
+      #FIND POLYGONS USING SHAPELY
+      #################################
+      print("POLYGONIZATION")
+      #https://gis.stackexchange.com/questions/58245/generate-polygons-from-a-set-of-intersecting-lines
       #lines ==> MultiLineString {:: M}
       #add a tiny buffer, say eps {:: MB}
       #region ==> Polygon {:: P} (region here is a square)
       #P.difference(MB) {resulting polygons}
+
       from shapely.geometry import MultiLineString
       from shapely.geometry import Polygon
       lines = MultiLineString(S_land)
@@ -191,11 +222,14 @@ class HmapSeg():
       p_new = P.difference(linesb)
       for p in p_new:
           c = np.array(p.exterior.coords)
-          print(c.shape)
-          print(c)
-          plt.plot(c[:,0],c[:,1])
-      plt.show()
+          #print(c.shape)
+          #print(c)
+          #plt.plot(c[:,0],c[:,1])
+      #plt.show()
+      #################################
 
+      #GRID POLYGONS TO 2D GRID
+      #################################
       from matplotlib.path import Path
       poly_mask = np.zeros(sub_m_copy.shape)
       counter = 1
@@ -219,16 +253,19 @@ class HmapSeg():
           #print(counter)
           poly_mask[mask] = counter
           counter += 1
+      #################################
       
-      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
-          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-          print("y0 = "+str(y0))
+      #for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
+      #    y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+      #    print("y0 = "+str(y0))
 
-          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
-          print("y1 = "+str(y1))
-          S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
-          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')   
+      #    y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+      #    print("y1 = "+str(y1))
+      #    S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
+      #    plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')   
       
+      #OVERLAY COASTLINE AND WATERMASK ON POLYGON MASK
+      #################################
       water_mask = water_mask[::-1,:]
       cost_line_mask = cost_line_mask[::-1,:]
       poly_mask[water_mask==0] = -2
@@ -236,32 +273,36 @@ class HmapSeg():
       cost_line_mask[poly_mask==-1] = 1
       poly_mask[poly_mask == -1] = -2
       poly_mask[cost_line_mask==0] = -1
-      plt.imshow(poly_mask)
+      #################################      
+
+      #SEGMENT MAP BASED ON POLYGON MASK OLD
+      #################################
+      #segmentation_map = np.zeros(poly_mask.shape)
+
+      #for k in range(counter):
+      #    segmentation_map[poly_mask==k] = np.average(sub_m_rev[poly_mask==k])
       
-      plt.show()
 
-      segmentation_map = np.zeros(poly_mask.shape)
+      #segmentation_map[poly_mask==-1] = np.average(sub_m_rev[poly_mask==-1])
+      #segmentation_map[poly_mask==-2] = 0
 
-      for k in range(counter):
-          segmentation_map[poly_mask==k] = np.average(sub_m_rev[poly_mask==k])
-      
+      #for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
+      #    y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+      #    print("y0 = "+str(y0))
 
-      segmentation_map[poly_mask==-1] = np.average(sub_m_rev[poly_mask==-1])
-      segmentation_map[poly_mask==-2] = 0
-
-      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
-          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-          print("y0 = "+str(y0))
-
-          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
-          print("y1 = "+str(y1))
-          S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
-          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')   
+      #    y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+      #    print("y1 = "+str(y1))
+      #    S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
+      #    plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')   
        
-      plt.imshow(segmentation_map)
+      #plt.imshow(segmentation_map)
       
-      plt.show()
-
+      #plt.show()
+      #################################
+      
+      #SEGMENT MAP BASED ON POLYGON MASK
+      #################################
+      print("SEGMENTATION")
       map.drawcoastlines()
       segmentation_map = np.zeros(poly_mask.shape)
 
@@ -273,8 +314,6 @@ class HmapSeg():
       segmentation_map[poly_mask==-2] = 0
       
       S = []
-      #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
-      #for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=20, min_angle=10, threshold=0.5*np.max(h),num_peaks=7)):#numpeaks
       for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
           
           y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
@@ -285,8 +324,8 @@ class HmapSeg():
           #print("y2 = "+str(dy*y0))
           map.plot((llcrnrlon, urcrnrlon), (urcrnrlat-1*dy*y0, urcrnrlat-1*dy*y1), '-r')
           #break
-      #cs = map.imshow(segmentation_map[::-1,:])
-      cs = map.imshow(sub_m)
+      cs = map.imshow(segmentation_map[::-1,:])
+      #cs = map.imshow(sub_m)
 
       parallels = np.linspace(llcrnrlat,urcrnrlat,5)
       map.drawparallels(parallels,labels=[1,0,0,0])
@@ -294,240 +333,42 @@ class HmapSeg():
       map.drawmeridians(meridians,labels=[0,0,0,1])
       cbar = map.colorbar(cs,location='bottom',pad="5%")
       cbar.set_label('log(#)')
-      plt.show()
-
-      #for polygon in p:
-      #    c = np.array(polygon.exterior.coords)
-      #    print(c.shape)
-      #    print(c)
-      #    plt.plot(c[:,0],c[:,1])
-          #plot_coords(ax, polygon.exterior)
-          #patch = PolygonPatch(polygon, alpha=0.5, zorder=2)
-          #ax.add_patch(patch)
-
-      #plt.show()
-
-      
-
-      #eroded = erosion(med,selem)
-      #selem = square(2)
-      #eroded = erosion(med,selem)
-      #map.imshow(eroded)
-      #plt.show()
-      
-      #med = self.convertMatToGray(med)
-      #map.imshow(med)
-      #plt.show()
-
-      #from skimage.morphology import extrema
-      #maxima = extrema.h_maxima(med,50)
-      #map.drawcoastlines()
-      #map.imshow(maxima,cmap=cm.jet)
-      #plt.show()
-
-      #fig, ax = plt.subplots() 
-      #blobs_doh = blob_doh(med, max_sigma=30, threshold=.01)
-      #ax.imshow(med) 
-      #for blob in blobs_doh:
-      #    print(blob)
-      #    y, x, r = blob
-      #    c = plt.Circle((x, y), r, color="r", linewidth=5, fill=False)
-      #    ax.add_patch(c)
-      #plt.show()
-      #med = self.convertMatToGray(med)
-      #labels = segmentation.slic(med, compactness=0.01, n_segments=3,enforce_connectivity=False)
-      #labels = labels + 1
-      #map.imshow(labels)
-      #out1 = color.label2rgb(labels, med, kind='avg') 
-      #map.imshow(out1)
-      #plt.show()
-      #map.drawcoastlines()
-      #rag = graph.rag_mean_color(med, labels, mode="similarity")
-
-      #labels2 = graph.cut_normalized(labels, rag)
-      #out2 = color.label2rgb(labels2, med, kind='avg')
-
-
-
-
-      #print("hallo="+str(np.amin(med)))
-      #print("hallo="+str(np.amax(med)))  
-      
-      #label_rgb = color.label2rgb(labels, med, kind='avg')
-      #map.imshow(med)
-      
-      #med[sub_m_old==0] = 0
-      #med = med>50
-      #med[sub_m_old==0]=0
-      #med = med*m 
-
-      #from matplotlib import cm
-      #map.imshow(med,cmap=cm.hot)
-      #plt.show()
-
-      '''
-      #histo = plt.hist(np.absolute(sub_m.ravel()-med_old.ravel())*m.ravel(), bins=np.arange(0, 256))
-      #plt.show() 
-
-      
-      #med = filters.gaussian(med, sigma=0.5)
-      #med = med<0.5
-       
-      from skimage.morphology import erosion, dilation, opening, closing, white_tophat,binary_opening,thin
-      from skimage.morphology import black_tophat, skeletonize, convex_hull_image
-      from skimage.morphology import disk,square
-      selem = disk(1)
-      eroded = erosion(med,selem)
-
-      #med = filters.sobel(med)
-      #med = med*m
-      
-      #med = (med-np.amax(med))*(-1)
-      #med[sub_m_old == 0] = 0
-      #med = med*m
-      #from matplotlib import cm
-      #med = self.convertMatToGray(med) 
-      #from skimage import feature
-      #edges1 = feature.canny(med,sigma=2) 
-      #med_t = med>50
-      #eroded = eroded<0.5
-      #eroded = filters.gaussian(eroded, sigma=1.0)
-      map.imshow(eroded,cmap=cm.gray)
-      print(np.amin(eroded))
-      plt.show()
-      histo = plt.hist(eroded, bins=np.arange(0, 256))
-      plt.show() 
-
-      from skimage.filters import try_all_threshold
-
-      #eroded = self.convertMatToGray(eroded)
-
-      
-
-      fig, ax = try_all_threshold(eroded.ravel(), figsize=(10, 8), verbose=False)
-      plt.show()
-
-      #med[m_old==1] = 0
-      #map.imshow(np.absolute(med))
-      
-      xx,yy = np.meshgrid(x_value[index_x_1:index_x_2],y_value[index_y_1:index_y_2])
-      #from scipy import interpolate  
-      #f = interpolate.interp2d(x_value[index_x_1:index_x_2], y_value[index_y_1:index_y_2], med, kind='cubic')
-      #x_new = np.linspace(x_value[index_x_1],x_value[index_x_2],2000)
-      #y_new = np.linspace(y_value[index_y_1],y_value[index_y_2],2000) 
-      #xx_new,yy_new = np.meshgrid(x_new,y_new)
-      #m_new = f(x_new,y_new)
-      
-
-      #cs = map.contourf(xx,yy,med,3)
-      #map.imshow(med,interpolation="nearest")
-      #plt.show()
-      #plt.show() 
-      #map.drawcoastlines()  
-      #med[med==0] = 1
-
-      X = np.reshape(med,(med.shape[0]*med.shape[1],1))
-
-      X2 = X[X<>0]
-
-      X2 = np.reshape(X2,(len(X2),1))
-
-      
-      from sklearn.cluster import KMeans
-      
-      kmeans = KMeans(n_clusters=3, random_state=0).fit(X2)
-      
-      #KMeans(n_clusters=2, random_state=0).fit(X)
-      
-      
-      X[X<>0] = kmeans.labels_+1   
-  
-      #X = X==2
-
-      med = np.reshape(X,(med.shape[0],med.shape[1])) 
-
-      #med = med < 0.4
-      #plt.show()
-      #v = np.absolute(med.ravel())
-      #v = v[v<>0]
-      #histo = plt.hist(v)
-      #plt.show()
-      #sub_m = sub_m*m
-      #from skimage import filters
-      #med = filters.sobel(med)
-      
-      #med = median(med, disk(1))
-      #med[med==0] = 255
-      #med = med<150
-      
-      #map.imshow(np.absolute(med))
-      #plt.show() 
-      map.drawcoastlines()
-      cs = map.contour(xx,yy,med,3)
-      plt.show()
-      
-      map.drawcoastlines()
-
-      c_v = ["b","r","m","c","g","k","b","r"]
-
-      for i in range(1,2):
-
-          paths = cs.collections[i].get_paths()
-          k = 0      
-
-          for k in range(len(paths)):
-              v = paths[k].vertices
-              if len(v[:,0]) > 50:
-           
-                 x = v[:,0]
-                 y = v[:,1]
-
-                 #hull = ConvexHull(v)
-                 #for simplex in hull.simplices:
-                 #plt.plot(v[simplex, 0], v[simplex, 1], c=c_v[4])
-
-                 map.plot(x,y,c=c_v[i])
-                 #plt.Polygon(segments[0], fill=False, color='w')
-              k = k+1
-              if k%100 == 0:
-                print(str(k))
-                print(str(len(paths)))
-      plt.show()
-      
-
-      from matplotlib import cm
-      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
-      sub_m_copy = med[::-1,:]
-      # Classic straight-line Hough transform
-      h, theta, d = hough_line(sub_m_copy)
-      
-      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
-      plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
-      plt.close()
-      
-     
-      #map.drawcoastlines()
-      S_land = []
-      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=10, min_angle=20, threshold=0.6*np.max(h),num_peaks=10)):#numpeaks
-          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-          print("y0 = "+str(y0))
-
-          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
-          print("y1 = "+str(y1))
-          S_land.append(((0,sub_m_copy.shape[1]), (y0, y1)))
-          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
-          #break
-      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
-      #plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+"_segmented.png")
+      else:
+         plt.show()
       plt.close() 
-      
-      
-      #histo = plt.hist(np.absolute(med.ravel()), bins=np.arange(0, 256))
-      #plt.show()
-      #sub_m = sub_m*m
-      '''
+
+      #PLOT EXTRACTED TRACKS ON ORIGINAL IMAGE
+      #################################
+      map.drawcoastlines()
+           
+      S = []
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=min_distance, min_angle=min_angle, threshold=h_threshold*np.max(h),num_peaks=num_peaks)):#numpeaks
+          
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+
+          S.append(((llcrnrlon,urcrnrlat-1*dy*y0),(urcrnrlon,urcrnrlat*dy*y1)))
+          #print("y1 = "+str(dy*y1))
+          #print("y2 = "+str(dy*y0))
+          map.plot((llcrnrlon, urcrnrlon), (urcrnrlat-1*dy*y0, urcrnrlat-1*dy*y1), '-r')
+          #break
+      cs = map.imshow(sub_m_rev[::-1,:])
+
+      parallels = np.linspace(llcrnrlat,urcrnrlat,5)
+      map.drawparallels(parallels,labels=[1,0,0,0])
+      meridians = np.linspace(llcrnrlon,urcrnrlon,5)
+      map.drawmeridians(meridians,labels=[0,0,0,1])
+      cbar = map.colorbar(cs,location='bottom',pad="5%")
+      cbar.set_label('log(#)')
+      if save_fig:
+         plt.savefig('./'+dir_name+'/'+dir_name+"_lines.png")
+      else:
+         plt.show()
+      plt.close() 
+
+
 
   def applyKMeans(self,file_save='TwoDGrid.sav',cmv='hot',N=10001,mask_file="mask.sav"):
       map = Basemap(resolution='h',llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42)
@@ -712,7 +553,7 @@ class HmapSeg():
       
       plt.show()
 
-  #555, 417    
+ 
   def createMask(self,llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45,N_row=555+1,N_column=417+1,resolution='h',plot_img=False):
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       
@@ -1225,3 +1066,237 @@ plt.savefig('test.png')
       
       joblib.dump(sub_m, "EU2.sav")   
 '''
+'''
+      #for polygon in p:
+      #    c = np.array(polygon.exterior.coords)
+      #    print(c.shape)
+      #    print(c)
+      #    plt.plot(c[:,0],c[:,1])
+          #plot_coords(ax, polygon.exterior)
+          #patch = PolygonPatch(polygon, alpha=0.5, zorder=2)
+          #ax.add_patch(patch)
+
+      #plt.show()
+
+      
+
+      #eroded = erosion(med,selem)
+      #selem = square(2)
+      #eroded = erosion(med,selem)
+      #map.imshow(eroded)
+      #plt.show()
+      
+      #med = self.convertMatToGray(med)
+      #map.imshow(med)
+      #plt.show()
+
+      #from skimage.morphology import extrema
+      #maxima = extrema.h_maxima(med,50)
+      #map.drawcoastlines()
+      #map.imshow(maxima,cmap=cm.jet)
+      #plt.show()
+
+      #fig, ax = plt.subplots() 
+      #blobs_doh = blob_doh(med, max_sigma=30, threshold=.01)
+      #ax.imshow(med) 
+      #for blob in blobs_doh:
+      #    print(blob)
+      #    y, x, r = blob
+      #    c = plt.Circle((x, y), r, color="r", linewidth=5, fill=False)
+      #    ax.add_patch(c)
+      #plt.show()
+      #med = self.convertMatToGray(med)
+      #labels = segmentation.slic(med, compactness=0.01, n_segments=3,enforce_connectivity=False)
+      #labels = labels + 1
+      #map.imshow(labels)
+      #out1 = color.label2rgb(labels, med, kind='avg') 
+      #map.imshow(out1)
+      #plt.show()
+      #map.drawcoastlines()
+      #rag = graph.rag_mean_color(med, labels, mode="similarity")
+
+      #labels2 = graph.cut_normalized(labels, rag)
+      #out2 = color.label2rgb(labels2, med, kind='avg')
+
+
+
+
+      #print("hallo="+str(np.amin(med)))
+      #print("hallo="+str(np.amax(med)))  
+      
+      #label_rgb = color.label2rgb(labels, med, kind='avg')
+      #map.imshow(med)
+      
+      #med[sub_m_old==0] = 0
+      #med = med>50
+      #med[sub_m_old==0]=0
+      #med = med*m 
+
+      #from matplotlib import cm
+      #map.imshow(med,cmap=cm.hot)
+      #plt.show()
+'''
+'''
+      #histo = plt.hist(np.absolute(sub_m.ravel()-med_old.ravel())*m.ravel(), bins=np.arange(0, 256))
+      #plt.show() 
+
+      
+      #med = filters.gaussian(med, sigma=0.5)
+      #med = med<0.5
+       
+      from skimage.morphology import erosion, dilation, opening, closing, white_tophat,binary_opening,thin
+      from skimage.morphology import black_tophat, skeletonize, convex_hull_image
+      from skimage.morphology import disk,square
+      selem = disk(1)
+      eroded = erosion(med,selem)
+
+      #med = filters.sobel(med)
+      #med = med*m
+      
+      #med = (med-np.amax(med))*(-1)
+      #med[sub_m_old == 0] = 0
+      #med = med*m
+      #from matplotlib import cm
+      #med = self.convertMatToGray(med) 
+      #from skimage import feature
+      #edges1 = feature.canny(med,sigma=2) 
+      #med_t = med>50
+      #eroded = eroded<0.5
+      #eroded = filters.gaussian(eroded, sigma=1.0)
+      map.imshow(eroded,cmap=cm.gray)
+      print(np.amin(eroded))
+      plt.show()
+      histo = plt.hist(eroded, bins=np.arange(0, 256))
+      plt.show() 
+
+      from skimage.filters import try_all_threshold
+
+      #eroded = self.convertMatToGray(eroded)
+
+      
+
+      fig, ax = try_all_threshold(eroded.ravel(), figsize=(10, 8), verbose=False)
+      plt.show()
+
+      #med[m_old==1] = 0
+      #map.imshow(np.absolute(med))
+      
+      xx,yy = np.meshgrid(x_value[index_x_1:index_x_2],y_value[index_y_1:index_y_2])
+      #from scipy import interpolate  
+      #f = interpolate.interp2d(x_value[index_x_1:index_x_2], y_value[index_y_1:index_y_2], med, kind='cubic')
+      #x_new = np.linspace(x_value[index_x_1],x_value[index_x_2],2000)
+      #y_new = np.linspace(y_value[index_y_1],y_value[index_y_2],2000) 
+      #xx_new,yy_new = np.meshgrid(x_new,y_new)
+      #m_new = f(x_new,y_new)
+      
+
+      #cs = map.contourf(xx,yy,med,3)
+      #map.imshow(med,interpolation="nearest")
+      #plt.show()
+      #plt.show() 
+      #map.drawcoastlines()  
+      #med[med==0] = 1
+
+      X = np.reshape(med,(med.shape[0]*med.shape[1],1))
+
+      X2 = X[X<>0]
+
+      X2 = np.reshape(X2,(len(X2),1))
+
+      
+      from sklearn.cluster import KMeans
+      
+      kmeans = KMeans(n_clusters=3, random_state=0).fit(X2)
+      
+      #KMeans(n_clusters=2, random_state=0).fit(X)
+      
+      
+      X[X<>0] = kmeans.labels_+1   
+  
+      #X = X==2
+
+      med = np.reshape(X,(med.shape[0],med.shape[1])) 
+
+      #med = med < 0.4
+      #plt.show()
+      #v = np.absolute(med.ravel())
+      #v = v[v<>0]
+      #histo = plt.hist(v)
+      #plt.show()
+      #sub_m = sub_m*m
+      #from skimage import filters
+      #med = filters.sobel(med)
+      
+      #med = median(med, disk(1))
+      #med[med==0] = 255
+      #med = med<150
+      
+      #map.imshow(np.absolute(med))
+      #plt.show() 
+      map.drawcoastlines()
+      cs = map.contour(xx,yy,med,3)
+      plt.show()
+      
+      map.drawcoastlines()
+
+      c_v = ["b","r","m","c","g","k","b","r"]
+
+      for i in range(1,2):
+
+          paths = cs.collections[i].get_paths()
+          k = 0      
+
+          for k in range(len(paths)):
+              v = paths[k].vertices
+              if len(v[:,0]) > 50:
+           
+                 x = v[:,0]
+                 y = v[:,1]
+
+                 #hull = ConvexHull(v)
+                 #for simplex in hull.simplices:
+                 #plt.plot(v[simplex, 0], v[simplex, 1], c=c_v[4])
+
+                 map.plot(x,y,c=c_v[i])
+                 #plt.Polygon(segments[0], fill=False, color='w')
+              k = k+1
+              if k%100 == 0:
+                print(str(k))
+                print(str(len(paths)))
+      plt.show()
+      
+
+      from matplotlib import cm
+      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+      sub_m_copy = med[::-1,:]
+      # Classic straight-line Hough transform
+      h, theta, d = hough_line(sub_m_copy)
+      
+      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+     
+      #map.drawcoastlines()
+      S_land = []
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d, min_distance=10, min_angle=20, threshold=0.6*np.max(h),num_peaks=10)):#numpeaks
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          print("y0 = "+str(y0))
+
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          print("y1 = "+str(y1))
+          S_land.append(((0,sub_m_copy.shape[1]), (y0, y1)))
+          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
+          #break
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      #plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close() 
+      
+      
+      #histo = plt.hist(np.absolute(med.ravel()), bins=np.arange(0, 256))
+      #plt.show()
+      #sub_m = sub_m*m
+'''
+
