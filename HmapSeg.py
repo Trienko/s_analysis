@@ -88,7 +88,10 @@ class HmapSeg():
   def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10,config_file="",save_fig=True):
       dir_name = config_file[:-4]
       
-    
+      if not os.path.isdir(dir_name):
+         #print("Hallo")
+         os.system("mkdir "+ dir_name)
+      
       #PLOT MAP
       print("EXTRACTING SUBMAP")
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
@@ -367,6 +370,7 @@ class HmapSeg():
       else:
          plt.show()
       plt.close() 
+      #################################
 
 
 
@@ -568,8 +572,9 @@ class HmapSeg():
 
       mask = np.ones((N_row-1,N_column-1),dtype=int)
 
+      print("N_row = ",N_row)
       for k in range (len(x_value)):
-          #print("k = ",k)
+          print("k = ",k)
           for i in range(len(y_value)):
               if map.is_land(x_value[k],y_value[i]):
                  mask[i,k] = 0
