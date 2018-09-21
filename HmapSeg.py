@@ -14,6 +14,7 @@ from shapely.ops import polygonize
 import pprint
 import configparser
 import sys
+import os.path
 #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
 
 class HmapSeg():
@@ -86,8 +87,9 @@ class HmapSeg():
 
 
 
-  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10):
+  def polygonSegmentation(self,file_save='TwoDGrid.sav',cmv='hot',N=10001, mask_file="mask.sav", water_mask = "water_mask.sav", resolution='h',llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45, m_size = 5, threshold=150, o_size = 3, min_distance=18, min_angle=20, h_threshold=0.6,num_peaks=10,config_file=""):
 
+      #PLOT MAP
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       map.drawcoastlines()
       parallels = np.linspace(llcrnrlat,urcrnrlat,5)
@@ -95,7 +97,7 @@ class HmapSeg():
       meridians = np.linspace(llcrnrlon,urcrnrlon,5)
       map.drawmeridians(meridians,labels=[0,0,0,1])
 
-
+      #EXTRACT SUB HEATMAP ACCORDING TO COORDINATES GIVEN 
       x = np.linspace(-180,180,N,endpoint=True)
       dx = np.absolute(x[1]-x[2])
       x_value = x + (x[1]-x[2])/2.0
@@ -117,13 +119,15 @@ class HmapSeg():
       
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
+      sub_m_rev = sub_m[::-1,:] #MAKE COPY OF ORIGINAL WILL USE DURING SEGEMENTATION STAGE
     
+      #EXTRACT_WATER_MASK
       water_mask = joblib.load(water_mask)  
       
+      #TAKE LOG
       sub_m = np.log(sub_m+1)
-      sub_m_rev = sub_m[::-1,:]
       
-      #sub_m_rev = sub_m[::-1,:]
+      #PLOT SUB-HEATMAP      
       cs = map.imshow(sub_m)
       sub_m = self.convertMatToGray(sub_m)  
       cbar = map.colorbar(cs,location='bottom',pad="5%")
@@ -707,16 +711,9 @@ class HmapSeg():
  
       
       plt.show()
-      
-      
-
-
-  
-
-
 
   #555, 417    
-  def createMask(self,llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45,N_row=555+1,N_column=417+1,resolution='h'):
+  def createMask(self,llcrnrlon=0, llcrnrlat=35,urcrnrlon=15, urcrnrlat=45,N_row=555+1,N_column=417+1,resolution='h',plot_img=False):
       map = Basemap(resolution=resolution,llcrnrlon=llcrnrlon, llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon, urcrnrlat=urcrnrlat)
       
       
@@ -731,7 +728,7 @@ class HmapSeg():
       mask = np.ones((N_row-1,N_column-1),dtype=int)
 
       for k in range (len(x_value)):
-          print("k = ",k)
+          #print("k = ",k)
           for i in range(len(y_value)):
               if map.is_land(x_value[k],y_value[i]):
                  mask[i,k] = 0
@@ -742,16 +739,16 @@ class HmapSeg():
       mask[:,0] = 0
       mask[:,-1] = 0
       
-      
-      map.drawcoastlines()
-      map.imshow(mask)
-      map.drawcoastlines()
-      plt.show() 
+      if plot_img:
+         map.drawcoastlines()
+         map.imshow(mask)
+         map.drawcoastlines()
+         plt.show() 
 
       return mask
 
 
-  def findEdges(self,mask):
+  def findEdges(self,mask,plot_img=False):
       mask_rolled = np.roll(mask,1,axis=1)
       edges_column = np.absolute(mask - mask_rolled)
       mask_rolled = np.roll(mask,1,axis=0)
@@ -774,11 +771,12 @@ class HmapSeg():
       edges[edges.shape[0]-2,:] = 0
       edges[:,edges.shape[1]-2] = 0
 
-      plt.imshow(edges[::-1,:])
-      plt.show()
+      if plot_img:
+         plt.imshow(edges[::-1,:])
+         plt.show()
       return edges
 
-  def expandMask(self,edges,window):
+  def expandMask(self,edges,window,plot_img=False):
       xy = np.asarray(np.where(edges == 1)).T
       mask = np.copy(edges)
       for k in range(xy.shape[0]):
@@ -800,8 +798,9 @@ class HmapSeg():
              u_c = edges.shape[1]-1
           mask[l_r:u_r,l_c:u_c] = 1
 
-      plt.imshow(mask[::-1,:])
-      plt.show()
+      if plot_img:
+         plt.imshow(mask[::-1,:])
+         plt.show()
       return mask
 
 
@@ -851,19 +850,15 @@ class HmapSeg():
       plt.imshow(mask.reshape(height, width))
       plt.show()
 
-      
-   
-
-  def plotEU(self,file_save='TwoDGrid.sav',vmax=5000,cmv='hot',image_name='test5.pdf',N=10001,llcrnrlon=0,llcrnrlat=35,urcrnrlon=15,urcrnrlat=45):
-      map = Basemap(resolution='h',llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat)
-      map.drawcoastlines()
+  def plotEU(self,file_save='TwoDGrid.sav',N=10001,llcrnrlon=0,llcrnrlat=35,urcrnrlon=15,urcrnrlat=45,plot_img=False):
+      if plot_img:
+         map = Basemap(resolution='h',llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat)
+         map.drawcoastlines()
 
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
       x_value = x_value[:-1]
       
-      #llcrnrlon
-
       y = np.linspace(-90,90,N,endpoint=True)
       y_value = y + (y[1]-y[2])/2.0
       y_value = y_value[:-1]
@@ -878,80 +873,13 @@ class HmapSeg():
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
       matriks=''
       
-      sub_m = np.log(sub_m)
-      
-      sub_m_copy = np.copy(sub_m)
-    
-      map.imshow(sub_m)
-      print(sub_m.shape)
-      plt.show()
-      '''
-      sub_m_copy[sub_m<2] = 0
-      
-      X = np.reshape(sub_m_copy,(sub_m_copy.shape[0]*sub_m_copy.shape[1],1))
-      
-      from sklearn.cluster import KMeans
-      
-      kmeans = KMeans(n_clusters=7).fit(X)
-      
-      #KMeans(n_clusters=2, random_state=0).fit(X)
-      
-      
-      sub_m_copy = np.reshape(kmeans.labels_,(sub_m_copy.shape[0],sub_m_copy.shape[1]))
-      
-      sub_m = np.copy(sub_m_copy)
-      
-      sub_m_copy[sub_m==6] = 1
-      sub_m_copy[sub_m<>6] = 0
-            
-      #from skimage import filters
-      #edges = filters.sobel(sub_m)
-      
-      #hist = np.histogram(sub_m.flatten(), bins='auto')
+      sub_m = np.log(sub_m+1)
+      if plot_img:
+         map.imshow(sub_m)
+         plt.show()
 
-      im = map.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
-      cb = map.colorbar(im, location='bottom', label="contour lines")
-      plt.show()
-      plt.close()
-      
-      from matplotlib import cm
-      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
-      sub_m_copy = sub_m_copy[::-1,:]
-      # Classic straight-line Hough transform
-      h, theta, d = hough_line(sub_m_copy)
-      
-      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
-      plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
-      plt.close()
-      
-     
-      for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
-          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
-          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
-      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
-      plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
-      plt.close()
-      
-      lines = probabilistic_hough_line(sub_m_copy, threshold=10, line_length=50,
-                                 line_gap=10)
-      
-      for line in lines:
-          p0, p1 = line
-          plt.plot((p0[0], p1[0]), (p0[1], p1[1]))
+      return sub_m.shape
 
-      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
-      plt.axes().set_aspect('auto', adjustable='box')
-      plt.show()
-      
-      #map.colorbar(im)
-      
-      plt.savefig(image_name)
-      
-      joblib.dump(sub_m, "EU2.sav")   
-      '''
   def load_config_file(self,file_name="AGEAN.ini"):
       config = configparser.ConfigParser()
       config.read(file_name)
@@ -968,6 +896,7 @@ class HmapSeg():
       [FILENAMES]
       global_heatmap = TwoDGrid.sav
       N = 10001
+      coast_line_window = 3
       large_coast_line_mask= mask.sav
       water_mask = water_mask.sav
 
@@ -982,8 +911,8 @@ class HmapSeg():
       h_threshold=0.6
       num_peaks=10
       '''
-      int_list = ["N","m_size","threshold","o_size","num_peaks"]
-      float_list = ["min_dist","min_angle","h_threshold","num_peaks","llcrnrlon","llcrnrlat","urcrnrlon","urcrnrlat","urcrnrlat"]
+      int_list = ["N","m_size","threshold","o_size","num_peaks","coast_line_window","min_distance","min_angle"]
+      float_list = ["h_threshold","num_peaks","llcrnrlon","llcrnrlat","urcrnrlon","urcrnrlat","urcrnrlat"]
      
       for s in sections:
           for p in config[s]:
@@ -996,48 +925,36 @@ class HmapSeg():
 
       return parameter_dictionary
         
-
-
-#config = configparser.ConfigParser()
-#>>> config.sections()
-#[]
-#>>> config.read('example.ini')
-#['example.ini']
-#>>> config.sections()
-#['bitbucket.org', 'topsecret.server.com']
-#>>> 'bitbucket.org' in config
-#True
-#>>> 'bytebong.com' in config
-#False
-#>>> config['bitbucket.org']['User']
-#'hg'
-#>>> config['DEFAULT']['Compression']
-#'yes'
-#>>> topsecret = config['topsecret.server.com']
-#>>> topsecret['ForwardX11']
-#'no'
-#>>> topsecret['Port']
-#'50022'
-#>>> for key in config['bitbucket.org']:  
-#...     print(key)
-#user
-#compressionlevel
-#serveraliveinterval
-#compression
-#forwardx11
-#>>> config['bitbucket.org']['ForwardX11']
-#'yes'
-
-        
-      
-
 if __name__ == "__main__":
    config_file = sys.argv[1]
    s = HmapSeg()
    #s.drawWorldMap()
-   #s.plotEU()
-   #s.plotEUGray()
-   s.load_config_file(file_name=config_file)
+   d_parm = s.load_config_file(file_name=config_file)
+   
+   #LOADING PARAMETERS FROM CONFIGURATION FILE
+   print("LOADING PARAMETERS FROM FILE: "+config_file)
+   
+   #GENERATE MASKS IF NEEDED
+   if not os.path.isfile("./"+d_parm["large_coast_line_mask"]):
+
+      dim = s.plotEU(file_save=d_parm["global_heatmap"],N=d_parm["n"],llcrnrlon=d_parm["llcrnrlon"],llcrnrlat=d_parm["llcrnrlat"],urcrnrlon=d_parm["urcrnrlon"],urcrnrlat=d_parm["urcrnrlat"],plot_img=False)
+      print("CREATING LAND WATER MASK: "+d_parm["large_coast_line_mask"])
+      mask = s.createMask(llcrnrlon=d_parm["llcrnrlon"],llcrnrlat=d_parm["llcrnrlat"],urcrnrlon=d_parm["urcrnrlon"],urcrnrlat=d_parm["urcrnrlat"],N_row=dim[0]+1,N_column=dim[1]+1,resolution=d_parm['resolution']) #CREATE WATER LAND MASK
+      joblib.dump(mask, d_parm["water_mask"]) 
+      print("CREATING COASTLINE MASK: "+d_parm["large_coast_line_mask"]) 
+      edges = s.findEdges(mask) #FIND COASTLINE
+      e_mask = s.expandMask(edges,d_parm["coast_line_window"]) #GENERATE COASTLINE MASK
+      joblib.dump(e_mask, d_parm["large_coast_line_mask"]) 
+
+   #RUN SEGMENTATION ALGORITHM
+   print("RUN SEGMENTATION ALGORITHM")  
+   s.polygonSegmentation(file_save=d_parm["global_heatmap"],N=d_parm["n"], mask_file=d_parm["large_coast_line_mask"], water_mask = d_parm["water_mask"], resolution=d_parm["resolution"],llcrnrlon=d_parm["llcrnrlon"],llcrnrlat=d_parm["llcrnrlat"],urcrnrlon=d_parm["urcrnrlon"],urcrnrlat=d_parm["urcrnrlat"], m_size = d_parm["m_size"], threshold=d_parm["threshold"], o_size = d_parm["o_size"], min_distance=d_parm["min_distance"], min_angle=d_parm["min_angle"], h_threshold=d_parm["h_threshold"],num_peaks=d_parm["num_peaks"],config_file=config_file)  
+
+      
+    
+
+   #print(dim)
+   #print(d_parm)
    #s.polygonSegmentation()
    #s.test_poly_mask()
    #s.testMedian()
@@ -1053,10 +970,10 @@ if __name__ == "__main__":
    #plt.show()
    
    #s.plotGriddedData()
-   
-      
+       
 
 '''
+#OLD CODE
 filename = 'finalized_model.sav'
 loaded_model = joblib.load(filename)
 plt.imshow(loaded_model[::-1,:],vmax=1000,cmap=plt.cm.get_cmap('Reds'))
@@ -1241,4 +1158,70 @@ print(end - start)
 plt.show()
 plt.savefig('test.png')
 
+      
+      sub_m_copy[sub_m<2] = 0
+      
+      X = np.reshape(sub_m_copy,(sub_m_copy.shape[0]*sub_m_copy.shape[1],1))
+      
+      from sklearn.cluster import KMeans
+      
+      kmeans = KMeans(n_clusters=7).fit(X)
+      
+      #KMeans(n_clusters=2, random_state=0).fit(X)
+      
+      
+      sub_m_copy = np.reshape(kmeans.labels_,(sub_m_copy.shape[0],sub_m_copy.shape[1]))
+      
+      sub_m = np.copy(sub_m_copy)
+      
+      sub_m_copy[sub_m==6] = 1
+      sub_m_copy[sub_m<>6] = 0
+            
+      #from skimage import filters
+      #edges = filters.sobel(sub_m)
+      
+      #hist = np.histogram(sub_m.flatten(), bins='auto')
+
+      im = map.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      cb = map.colorbar(im, location='bottom', label="contour lines")
+      plt.show()
+      plt.close()
+      
+      from matplotlib import cm
+      from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+      sub_m_copy = sub_m_copy[::-1,:]
+      # Classic straight-line Hough transform
+      h, theta, d = hough_line(sub_m_copy)
+      
+      plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]],cmap=cm.gray)#aspect=1/1.5
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+     
+      for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
+          y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+          y1 = (dist - sub_m_copy.shape[1] * np.cos(angle)) / np.sin(angle)
+          plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      plt.close()
+      
+      lines = probabilistic_hough_line(sub_m_copy, threshold=10, line_length=50,
+                                 line_gap=10)
+      
+      for line in lines:
+          p0, p1 = line
+          plt.plot((p0[0], p1[0]), (p0[1], p1[1]))
+
+      plt.imshow(sub_m_copy,cmap=plt.cm.get_cmap(cmv))
+      plt.axes().set_aspect('auto', adjustable='box')
+      plt.show()
+      
+      #map.colorbar(im)
+      
+      plt.savefig(image_name)
+      
+      joblib.dump(sub_m, "EU2.sav")   
 '''
