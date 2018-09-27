@@ -35,6 +35,54 @@ class HmapSeg():
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
 
+  def gridData_to_2DMap_NARI(self,file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav'):
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      matriks = np.zeros((N-1,N-1),dtype=int)
+
+      counter = 0
+
+      with open(file_name) as infile:
+           for line in infile:
+               #print(line)
+               
+               if counter == 0:
+                  counter = counter + 1
+                  continue
+               
+               line_split = line.split(",")
+
+               lon = float(line_split[6]) 
+               lat = float(line_split[7])
+
+               index_x = np.searchsorted(x,lon)
+               index_y = np.searchsorted(y,lat)
+
+               if (index_x == N):
+                  index_x = index_x - 2
+               elif (index_x > 0):
+                  index_x = index_x - 1
+           
+               if (index_y == N):
+                  index_y = index_y - 2
+               elif (index_y > 0):
+                  index_y = index_y - 1
+ 
+               matriks[index_y,index_x]+=1
+
+               counter = counter + 1
+               if (counter % v == 0):
+                  print("counter = ",counter) 
+
+
+      joblib.dump(matriks, file_save)  
+
   def gridData_to_2DMap(self,file_name="8monthsAIS.txt",N=10001,v=1000000,file_save='TwoDGrid.sav'):
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
@@ -50,6 +98,7 @@ class HmapSeg():
 
       with open(file_name) as infile:
            for line in infile:
+               
                line_split = line.split(" ")
 
                lat = float(line_split[2]) 
@@ -133,7 +182,7 @@ class HmapSeg():
       sub_m_rev = sub_m[::-1,:] #MAKE COPY OF ORIGINAL WILL USE DURING SEGEMENTATION STAGE      
 
       #PLOT SUB-HEATMAP      
-      cs = map.imshow(sub_m)
+      cs = map.imshow(sub_m,vmax=8)
       sub_m = self.convertMatToGray(sub_m)  
       cbar = map.colorbar(cs,location='bottom',pad="5%")
       cbar.set_label('log(#)')
@@ -153,6 +202,7 @@ class HmapSeg():
 
       med[water_mask==0] = np.amin(med)
       med[cost_line_mask==0] = np.amin(med)
+      med[sub_m==0] = 0
 
       map.drawcoastlines()
       map.imshow(med)
@@ -696,7 +746,7 @@ class HmapSeg():
       plt.imshow(mask.reshape(height, width))
       plt.show()
 
-  def plotEU(self,file_save='TwoDGrid.sav',N=10001,llcrnrlon=0,llcrnrlat=35,urcrnrlon=15,urcrnrlat=45,plot_img=False):
+  def plotEU(self,file_save='TwoDGridNARI.sav',N=10001,llcrnrlon=0,llcrnrlat=35,urcrnrlon=15,urcrnrlat=45,plot_img=True):
       if plot_img:
          map = Basemap(resolution='h',llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat)
          map.drawcoastlines()
@@ -728,9 +778,10 @@ class HmapSeg():
 
   def load_config_file(self,file_name="AGEAN.ini"):
       config = configparser.ConfigParser()
+      print(file_name)
       config.read(file_name)
       sections = config.sections() 
-
+      print(sections)
       parameter_dictionary = {}
       '''      
       llcrnrlon = 22
@@ -772,11 +823,15 @@ class HmapSeg():
       return parameter_dictionary
         
 if __name__ == "__main__":
+   #s = HmapSeg()
+   #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
+   #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
+   
    config_file = sys.argv[1]
    s = HmapSeg()
    #s.drawWorldMap()
    d_parm = s.load_config_file(file_name=config_file)
-   
+   print(d_parm)
    #LOADING PARAMETERS FROM CONFIGURATION FILE
    print("LOADING PARAMETERS FROM FILE: "+config_file)
    
@@ -795,10 +850,7 @@ if __name__ == "__main__":
    #RUN SEGMENTATION ALGORITHM
    print("RUN SEGMENTATION ALGORITHM")  
    s.polygonSegmentation(file_save=d_parm["global_heatmap"],N=d_parm["n"], mask_file=d_parm["large_coast_line_mask"], water_mask = d_parm["water_mask"], resolution=d_parm["resolution"],llcrnrlon=d_parm["llcrnrlon"],llcrnrlat=d_parm["llcrnrlat"],urcrnrlon=d_parm["urcrnrlon"],urcrnrlat=d_parm["urcrnrlat"], m_size = d_parm["m_size"], threshold=d_parm["threshold"], o_size = d_parm["o_size"], min_distance=d_parm["min_distance"], min_angle=d_parm["min_angle"], h_threshold=d_parm["h_threshold"],num_peaks=d_parm["num_peaks"],config_file=config_file)  
-
-      
-    
-
+   
    #print(dim)
    #print(d_parm)
    #s.polygonSegmentation()
