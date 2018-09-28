@@ -1,0 +1,83 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsthm,amsmath,amsfonts,amssymb,graphicx,subfigure}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\title{Extracting Linear Tracks from Heatmaps}
+\author{T.L. Grobler}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+In this paper 
+\end{abstract}
+
+\begin{section}{Introduction}
+Extracting routes from heat-maps that were constructed from the movements of say animals, humans, vehicles or vessels is an important problem to address. Most often, when we
+first inspect a dataset containing the temporal-spatial coordinates of multiple objects we would create a heatmap (grid data onto a two-dimensional grid) so that we can get a feel for the data. Once we have some understanding 
+we can process and extract useful information from the original ungridded data. Normally, no automatic information is extracted from the heatmap, it merely serves as an inspection tool
+which enables a datascientist to better analyze the data. In this paper, we develop a technique which can be used to automatically extract useful information from a heatmap. This extracted 
+information can then be used in conjunction with the intuition gained from inspecting the heatmap to increase a datascientist's ability to analyze the data, i.e. we propose a 
+heatmap segmenation algorithm. The identified segments can then be used 
+to identify frequently used routes as well as  regions containing above average traffic. The identified regions can then be inspected more closely by a datascientist.
+In this paper we focus on Automatic Identification System (AIS) data, which can be used to help track the movement of ships at sea.
+
+The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. 
+\begin{algorithm}
+ \caption{AIS Polygon Heat-map Segmentation Algorithm}\label{euclid}
+ \begin{algorithmic}[1]
+ \Procedure{polygonSegmentation}{heatmap,coastlinemask,landmask}
+ \State $\textrm{heatmap} \gets \log(\textrm{heatmap}+1)$
+ \Comment{emphasizes the linear tracks}
+ \State $\textrm{copy} \gets \textrm{heatmap}$
+ \Comment{store a copy of original}
+ \State $\textrm{heatmap} \gets \textrm{maskCoastline(heatmap,coastlinemask)}$
+ \Comment{mask coastline}
+ \State $\textrm{heatmap} \gets \textrm{heatmap - medianFilter(heatmap)}$ 
+ \Comment{emphasizes the linear tracks}
+ \State $\textrm{heatmap} \gets \textrm{otsuThreshold(heatmap)}$
+ \Comment{binary segmentation}
+ \State $\textrm{heatmap} \gets \textrm{binaryOpening(heatmap)}$
+ \Comment{clears the noisy region}
+ \State $\textrm{lines} \gets \textrm{houghTransform(heeatmap)}$
+ \Comment{extract lines from image}
+ \State $\textrm{polygons} \gets \textrm{polygonize(heatmap,coastlinemask,landmask)}$
+ \For{polygon in polygons}
+     \State $\textrm{heatmap[polygon]} \gets \textrm{average(copy[polygon])}$ 
+ \EndFor
+ \State $\textrm{heatmap[coastlinemask]} \gets \textrm{average(copy[polygon])}$
+ \State $\textrm{heatmap[landmask]} \gets 0$
+ \Comment{segmentation}
+ \State plot(heatmap)
+ 
+% \State $\textit{stringlen} \gets \text{length of }\textit{string}$
+% \State $i \gets \textit{patlen}$
+% %\BState \emph{top}:
+% \If {$i > \textit{stringlen}$} \Return false
+% \EndIf
+% \State $j \gets \textit{patlen}$
+% %\BState \emph{loop}:
+% \If {$\textit{string}(i) = \textit{path}(j)$}
+% \State $j \gets j-1$.
+% \State $i \gets i-1$.
+% \State \textbf{goto} \emph{loop}.
+% \State \textbf{close};
+% \EndIf
+% \State $i \gets i+\max(\textit{delta}_1(\textit{string}(i)),\textit{delta}_2(j))$.
+% \State \textbf{goto} \emph{top}.
+ \EndProcedure
+ \end{algorithmic}
+ \end{algorithm}
+
+
+
+the first thing we do is to create a heatmap of our collected data, this is to provide us with some visualization 
+
+This document outlines a possible approach to proving that the gain solutions $\boldsymbol{g}$ can not contain a zero element. This simple idea is turning
+out to be a bit harder to prove than I wish it was (maybe there is a simpler way, that I am missing). The paper is unfortunately not rigorous enough without such a proof. Altough I do believe we should submit without
+this proof and try to work it into the next paper. The entire derivation works, except if $g_p = 0$ (which is exceptable ``colateral damage'' according to me). The idea is
+to use the Perron-Frobenius theorem extended to complex matrices \cite{Noutsos2012}. This is a very new theorem and was derived in 2012. 
+
+\end{section}
+
+\end{document}
