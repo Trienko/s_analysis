@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage[left=2cm, right=2cm, top=2cm]{geometry}
+\usepackage[left=2cm, right=2cm, top=1cm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{amsthm,amsmath,amsfonts,amssymb,graphicx}
 \usepackage{algorithm}
@@ -7,19 +7,27 @@
 \usepackage{subcaption}
 \usepackage[noend]{algpseudocode}
 
-\title{Segmentation of Heatmaps}
-%\author{T.L. Grobler}
+\title{Segmentation of heat-maps containing linear routes}
+\author{\vspace{-10ex}}
+\date{\vspace{-5ex}}
 
 \begin{document}
 \maketitle
 \begin{abstract}
+In this paper we present a heat-map segmentation algorithm. The proposed segmentation algorithm
+segments a heat-map into high traffic regions and low traffic regions. The borders of the different regions often coincide with high traffic routes. We then test the proposed 
+algorithm on a heat-map constructed from Automatic Identification System (AIS) data collected in the Celtic sea, the Channel and the Bay of Biscay. The results show that the approach shows promise and if improved further 
+it could become a viable segmentation strategy.
 \end{abstract}
-Most often, when we first inspect a dataset containing the temporal-spatial coordinates of multiple objects (i.e. the movements of say humans, animals or vessels) we would create a heat-map (grid data onto a two-dimensional grid) so that we can build some intuition (gather information) about the data.
-This intuition can then be used to further analyze the original data. This intuition can be built up by extracting the following information from a heat-map: the high volume 
-routes and regions (this is not meant to be an exhaustive list). In this paper, we present an automatic heat-map segmentation algorithm which will allow us to accomplish exactly this.
-In this paper we focus on Automatic Identification System (AIS) data, which can be used to help track the movement of ships at sea. The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. 
+Often, when we first inspect a dataset containing the temporal-spatial coordinates of multiple objects (i.e. the movements of say humans, animals or vessels)
+we would create a heat-map (grid data onto a two-dimensional grid) so that we can build some intuition (gather information) about the data.
+The information we extract from heat-maps (insight gained) can then be used to further analyze the original data. Some examples of the useful kind of information which can be extracted from a 
+heat-map include: high traffic volume routes and regions. In this paper, we present an automatic heat-map segmentation algorithm which will allow us to automatically extract the 
+ aforementioned pieces of information. In this paper we focus primarily on AIS data (shipping data). 
+ 
+The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. 
 \begin{algorithm}
- \caption{AIS Polygon Heat-map Segmentation Algorithm}\label{euclid}
+ \caption{Polygon Heat-map Segmentation Algorithm}\label{euclid}
  \begin{algorithmic}[1]
  \Procedure{polygonSegmentation}{heatmap,coastlinemask,landmask}
  \State $\textrm{heatmap} \gets \log(\textrm{heatmap}+1)$
@@ -29,7 +37,7 @@ In this paper we focus on Automatic Identification System (AIS) data, which can 
  \State $\textrm{heatmap} \gets \textrm{maskCoastline(heatmap,coastlinemask)}$
  \Comment{mask coastline}
  \State $\textrm{heatmap} \gets \textrm{heatmap - medianFilter(heatmap)}$ 
- \Comment{emphasizes the linear tracks}
+ \Comment{detect outliers}
  \State $\textrm{heatmap} \gets \textrm{otsuThreshold(heatmap)}$
  \Comment{binary segmentation}
  \State $\textrm{heatmap} \gets \textrm{binaryOpening(heatmap)}$
@@ -64,18 +72,17 @@ In this paper we focus on Automatic Identification System (AIS) data, which can 
  \EndProcedure
  \end{algorithmic}
  \end{algorithm}
-The first step in the algorithm is to take the elment-wise logarithm of the heatmap. This visually emphasises the high volume routes found within the heatmap. We then 
-create a binary image. To achieve this we first filter the logged heatmap. We make use of a median filter as it is well known for its ability to detect outliers. We then threshold (we used Otsu thresholding) the  
-filtered heatmap. To clean the binary heatmap (we obtained by applying thresholding) we make use of morphological opening (which is used to remove noise from the foreground).
-We then use the Hough Transform to extract the longer lines from the opened binary heatmap. We then polygonize the image using the extracted lines. We can then 
-segment the image into different regions using the aforementioned derived polygons. The result of applying the above algorithm to AIS data is depicted in Figure!\ref{}.
+The first step of the algorithm is to take the elment-wise logarithm of the heat-map passed into it as an argument. This visually emphasises the high volume routes found within the heat-map. We then 
+create a binary image. To achieve this we first filter the logged heat-map. We make use of a median filter as it is well known for its ability to detect outliers. We then threshold (we used Otsu thresholding) the  
+filtered heat-map. To clean the binary heat-map (we obtained by applying thresholding) we apply the morphological opening operator to it (which is used to remove noise from the foreground).
+We then use the Hough Transform to extract the longer lines from the opened binary heat-map. We then polygonize the heat-map using the extracted lines. We can then 
+segment the original heat-map into different regions using the aforementioned derived polygons. The result of applying the above algorithm to AIS data is depicted in Figure~\ref{fig7}.
 
 
-There are some short commings in the algorithm. The Hough-Transform struggles to detect all 
-the lines. It especially struggles with short and closely spaced parallel lines. Some of the line segments should 
+Figure~\ref{fig7} highlights some of the shortcomings of this segmentation strategy. The Hough-Transform struggles to detect all 
+the lines. It especially struggles with short and closely spaced parallel lines (can be mitigated by iteratively applying the algorithm to each segmented region). It works on the assumption that straight line routes were followed (which is not guaranteed). Some of the line segments should also be removed prior to polygonization as they do not 
+represent true high volume routes. The value of the coastline segments can be separately computed within each polygon.
  
- The logarithm of the heatmap is computed. We then  
-
 \begin{figure}[ht] 
   \begin{subfigure}[b]{0.5\linewidth}
     \centering
@@ -103,19 +110,10 @@ the lines. It especially struggles with short and closely spaced parallel lines.
     \caption{Segmented image} 
     \label{fig7:d} 
   \end{subfigure} 
-  \caption{A heatmap of AIS ship positions within the Celtic sea, the Channel and the Bay of Biscay (France) [Longitude between $-10^{\circ}$ and $0^{\circ}$ and Latitude between $45^{\circ}$ and $51^{\circ}$]. The above subfigures were generated by applying the segmentation algorithm depicted in Algorithm 1 to an existing heatmap of the region. The top left image was optained after the logarithm of the original heatmap was taken (element-wise). The top right image 
-  was obtained by applying binary thresholding and morphological opening to a filtered variant of the top left heat map. The right bottom heatmap depicts the lines we were able to extract 
+  \caption{A heat-map of AIS ship positions within the Celtic sea, the Channel and the Bay of Biscay (France) [Longitude between $-10^{\circ}$ and $0^{\circ}$ and Latitude between $45^{\circ}$ and $51^{\circ}$]. The above subfigures were generated by applying the segmentation algorithm depicted in Algorithm 1 to an existing heat-map of the region. The top left image was optained after the logarithm of the original heat-map was taken (element-wise). The top right image 
+  was obtained by applying binary thresholding and morphological opening to a filtered variant of the top left heat map. The right bottom heat-map depicts the lines we were able to extract 
   from the top right image using the Hough Transform. The bottom right image contains the final segmented heat map. Notice that the coastline is segmented separately.}
   \label{fig7} 
 \end{figure}
-
-the first thing we do is to create a heatmap of our collected data, this is to provide us with some visualization 
-
-This document outlines a possible approach to proving that the gain solutions $\boldsymbol{g}$ can not contain a zero element. This simple idea is turning
-out to be a bit harder to prove than I wish it was (maybe there is a simpler way, that I am missing). The paper is unfortunately not rigorous enough without such a proof. Altough I do believe we should submit without
-this proof and try to work it into the next paper. The entire derivation works, except if $g_p = 0$ (which is exceptable ``colateral damage'' according to me). The idea is
-to use the Perron-Frobenius theorem extended to complex matrices \cite{Noutsos2012}. This is a very new theorem and was derived in 2012. 
-
-
 
 \end{document}
