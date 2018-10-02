@@ -36,11 +36,12 @@ class HmapSeg():
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
 
-  def create_Dictionary_NARI(self,file_name="nari_dynamic.csv",file_save = "dict_nari.sav"):
+  def create_Dictionary_NARI(self,file_name="nari_dynamic.csv",file_save = "dict_nari",v=1000000):
       nari = {}
       #counter = 0
       #sourcemmsi,navigationalstatus,rateofturn,speedoverground,courseoverground,trueheading,lon,lat,t
       counter = 0
+      f_count = 0
       with open(file_name) as infile:
            for line in infile:
 
@@ -69,14 +70,29 @@ class HmapSeg():
                   nari[line_split[0]] = np.vstack((nari[line_split[0]],temp_var))
   
                
-               if counter%1000000 == 0:
+               if counter%v == 0:
+                  joblib.dump(nari, file_save+"_"+str(f_count)+".sav")
+                  nari = {}
+                  f_count = f_count + 1
                   print(counter)
                counter = counter + 1
- 
-      joblib.dump(nari, file_save)  
 
-  
+  def plot_play(self,file_name="dict_nari_10.sav"):
+      dict_var = joblib.load(file_name)
+      
+      print(len(dict_var.keys()))      
 
+      for vessel in dict_var.keys():
+          temp = dict_var[vessel]
+          t = temp[:,0]
+          idx = np.argsort(t)
+          temp = temp[idx,:]
+          plt.plot(temp[:,1],temp[:,2])
+
+      plt.show() 
+
+      #print(t[idx])
+      #break
   def gridData_to_2DMap_NARI(self,file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav'):
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
@@ -866,7 +882,8 @@ class HmapSeg():
         
 if __name__ == "__main__":
    s = HmapSeg()
-   s.create_Dictionary_NARI()
+   s.plot_play()
+   #s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
    '''
