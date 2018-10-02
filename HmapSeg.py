@@ -17,6 +17,7 @@ import sys
 import os.path
 #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
 
+
 class HmapSeg():
 
   def __init__(self):
@@ -34,6 +35,47 @@ class HmapSeg():
       fac = 255.0/max_v
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
+
+  def create_Dictionary_NARI(self,file_name="nari_dynamic.csv",file_save = "dict_nari.sav"):
+      nari = {}
+      #counter = 0
+      #sourcemmsi,navigationalstatus,rateofturn,speedoverground,courseoverground,trueheading,lon,lat,t
+      counter = 0
+      with open(file_name) as infile:
+           for line in infile:
+
+               if counter == 0:
+                  counter = counter + 1
+                  continue
+
+               line_split = line.split(",")
+
+               if line_split[0] not in nari.keys():
+
+                  temp_var = np.zeros((1,4))
+                  temp_var[0,0] = float(line_split[8]) #time
+                  temp_var[0,1] = float(line_split[6]) #lon
+                  temp_var[0,2] = float(line_split[7]) #lat
+                  temp_var[0,3] = float(line_split[3]) #speed
+
+                  nari[line_split[0]] = temp_var
+               else:
+
+                  temp_var = np.zeros((1,4))
+                  temp_var[0,0] = float(line_split[8]) #time
+                  temp_var[0,1] = float(line_split[6]) #lon
+                  temp_var[0,2] = float(line_split[7]) #lat
+                  temp_var[0,3] = float(line_split[3]) #speed
+                  nari[line_split[0]] = np.vstack((nari[line_split[0]],temp_var))
+  
+               
+               if counter%1000000 == 0:
+                  print(counter)
+               counter = counter + 1
+ 
+      joblib.dump(nari, file_save)  
+
+  
 
   def gridData_to_2DMap_NARI(self,file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav'):
       x = np.linspace(-180,180,N,endpoint=True)
@@ -823,10 +865,11 @@ class HmapSeg():
       return parameter_dictionary
         
 if __name__ == "__main__":
-   #s = HmapSeg()
+   s = HmapSeg()
+   s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
-   
+   '''
    config_file = sys.argv[1]
    s = HmapSeg()
    #s.drawWorldMap()
@@ -850,7 +893,7 @@ if __name__ == "__main__":
    #RUN SEGMENTATION ALGORITHM
    print("RUN SEGMENTATION ALGORITHM")  
    s.polygonSegmentation(file_save=d_parm["global_heatmap"],N=d_parm["n"], mask_file=d_parm["large_coast_line_mask"], water_mask = d_parm["water_mask"], resolution=d_parm["resolution"],llcrnrlon=d_parm["llcrnrlon"],llcrnrlat=d_parm["llcrnrlat"],urcrnrlon=d_parm["urcrnrlon"],urcrnrlat=d_parm["urcrnrlat"], m_size = d_parm["m_size"], threshold=d_parm["threshold"], o_size = d_parm["o_size"], min_distance=d_parm["min_distance"], min_angle=d_parm["min_angle"], h_threshold=d_parm["h_threshold"],num_peaks=d_parm["num_peaks"],config_file=config_file)  
-   
+   '''
    #print(dim)
    #print(d_parm)
    #s.polygonSegmentation()
