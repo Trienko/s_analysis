@@ -77,19 +77,86 @@ class HmapSeg():
                   print(counter)
                counter = counter + 1
 
-  def plot_play(self,file_name="dict_nari_10.sav"):
+  def plot_play(self,file_name="dict_nari_5.sav"):
       dict_var = joblib.load(file_name)
-      
+      import math
       print(len(dict_var.keys()))      
-
+      m_vec = np.array([])
+      std_vec = np.array([])
+      mean_vec = np.array([])
+      mask_vessel = np.ones((len(dict_var.keys()),),dtype=int)
+      counter = 0
       for vessel in dict_var.keys():
           temp = dict_var[vessel]
+          
           t = temp[:,0]
           idx = np.argsort(t)
           temp = temp[idx,:]
-          plt.plot(temp[:,1],temp[:,2])
+          x1 = temp[0:-1,1]
+          x2 = temp[1:,1] 
+           
+          y1 = temp[0:-1,2]
+          y2 = temp[1:,2]
 
+          if len(x1) <> 0:
+             m = np.zeros(x1.shape)
+
+             #print(m)
+             #print("x1 = "+str(x1))
+          
+             for k in range(len(x1)):
+                 if not np.allclose((x2[k]-x1[k]),0):
+                    m[k] = (y2[k]-y1[k])/(x2[k]-x1[k])
+                 #print(m)   
+             m_vec = np.append(m_vec,m)
+         
+             #print(m)   
+             std_vec = np.append(std_vec,np.std(m))
+             mean_vec = np.append(std_vec,np.mean(m))
+             if np.std(m) > 1:
+                mask_vessel[counter] = 0   
+             #print(m)   
+
+             #if math.isnan(np.std(m)):
+             #   print("m_if = "+str(m))
+             #   break 
+             if np.std(m) > 1:
+                #plt.plot(temp[:-1,1],m)
+                plt.plot(temp[:,1],temp[:,2])
+                #plt.ylim(-5,5)
+          else:
+             mask_vessel[counter] = 0
+          counter = counter+1 
+
+      plt.show(mean_vec,std_vec,'rx')
       plt.show() 
+      m_vec_zero_free = np.array([])
+
+      for k in range(len(m_vec)):
+          if not np.allclose(m_vec[k],0):
+             m_vec_zero_free = np.append(m_vec_zero_free,m_vec[k])
+
+      plt.semilogy()
+           
+      m_vec_zero_free =m_vec_zero_free[m_vec_zero_free<20]
+      m_vec_zero_free = m_vec_zero_free[m_vec_zero_free>-20]
+      n, bins, patches = plt.hist(x=m_vec_zero_free,bins=500,color='#0504aa',alpha=0.7)
+      plt.grid(axis='y', alpha=0.75)
+      plt.xlabel('Value')
+      plt.ylabel('Frequency')
+      plt.title('My Very Own Histogram')
+      #plt.text(23, 45, r'$\mu=15, b=3$')
+      plt.show()
+      plt.plot(std_vec)
+      print(std_vec)
+      plt.show()
+      n, bins, patches = plt.hist(x=std_vec,bins=100,color='#0504aa',alpha=0.7)
+      plt.grid(axis='y', alpha=0.75)
+      plt.xlabel('Value')
+      plt.ylabel('Frequency')
+      plt.title('My Very Own Histogram')
+      #plt.text(23, 45, r'$\mu=15, b=3$')
+      plt.show()
 
       #print(t[idx])
       #break
