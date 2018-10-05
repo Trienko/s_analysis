@@ -15,6 +15,8 @@ import pprint
 import configparser
 import sys
 import os.path
+from mpl_toolkits import mplot3d
+
 #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
 
 
@@ -77,13 +79,16 @@ class HmapSeg():
                   print(counter)
                counter = counter + 1
 
-  def plot_play(self,file_name="dict_nari_5.sav"):
+  def plot_play(self,file_name="dict_nari_0.sav"):
       dict_var = joblib.load(file_name)
       import math
-      print(len(dict_var.keys()))      
+      #print(len(dict_var.keys()))      
+      
       m_vec = np.array([])
       std_vec = np.array([])
       mean_vec = np.array([])
+      x_vec = np.array([])
+
       mask_vessel = np.ones((len(dict_var.keys()),),dtype=int)
       counter = 0
       for vessel in dict_var.keys():
@@ -112,23 +117,24 @@ class HmapSeg():
          
              #print(m)   
              std_vec = np.append(std_vec,np.std(m))
-             mean_vec = np.append(std_vec,np.mean(m))
-             if np.std(m) > 1:
+             mean_vec = np.append(mean_vec,np.mean(m))
+             x_vec = np.append(x_vec,np.mean(x1))
+             if np.std(m) < 1:
                 mask_vessel[counter] = 0   
              #print(m)   
 
              #if math.isnan(np.std(m)):
              #   print("m_if = "+str(m))
              #   break 
-             if np.std(m) > 1:
+             if np.std(m) > 0:
                 #plt.plot(temp[:-1,1],m)
-                plt.plot(temp[:,1],temp[:,2])
+                plt.plot(temp[:,1],temp[:,2],"x")
                 #plt.ylim(-5,5)
           else:
              mask_vessel[counter] = 0
           counter = counter+1 
 
-      plt.show(mean_vec,std_vec,'rx')
+      
       plt.show() 
       m_vec_zero_free = np.array([])
 
@@ -136,8 +142,17 @@ class HmapSeg():
           if not np.allclose(m_vec[k],0):
              m_vec_zero_free = np.append(m_vec_zero_free,m_vec[k])
 
-      plt.semilogy()
-           
+      plt.semilogy(mean_vec,std_vec,'rx')
+      plt.show()
+
+      
+      #import matplotlib.pyplot as plt 
+      
+      fig = plt.figure()
+      ax = plt.axes(projection='3d')
+
+      ax.scatter3D(mean_vec, std_vec, x_vec, c=x_vec, cmap='Greens'); 
+      plt.show()     
       m_vec_zero_free =m_vec_zero_free[m_vec_zero_free<20]
       m_vec_zero_free = m_vec_zero_free[m_vec_zero_free>-20]
       n, bins, patches = plt.hist(x=m_vec_zero_free,bins=500,color='#0504aa',alpha=0.7)
