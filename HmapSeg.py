@@ -79,6 +79,66 @@ class HmapSeg():
                   print(counter)
                counter = counter + 1
 
+  def find_max_min(self,file_name="dict_nari_0.sav"):
+      dict_var = joblib.load(file_name)
+      counter = 0
+      min_x = 0
+      max_x = 0 
+      min_y = 0
+      max_y = 0
+      for vessel in dict_var.keys():
+          temp = dict_var[vessel]
+          
+          x = temp[:,1]
+          y = temp[:,2]
+          
+          if counter == 0:
+             min_x = np.amin(x)
+             max_x = np.amax(x) 
+             min_y = np.amin(y)
+             max_y = np.amax(y)
+          else:
+             min_x_t = np.amin(x)
+             max_x_t = np.amax(x) 
+             min_y_t = np.amin(y)
+             max_y_t = np.amax(y)
+            
+             if min_x_t < min_x:
+                min_x = min_x_t
+             if max_x_t > max_x:
+                max_x = max_x_t
+             if min_y_t < min_y:
+                min_y = min_y_t
+             if max_y_t > max_y:
+                max_y = max_y_t
+
+      return min_x,max_x,min_y,max_y  
+                
+  def interpolate_curves_plot(self,file_name="dict_nari_0.sav",number_of_points=100):
+      dict_var = joblib.load(file_name)
+      
+      from scipy import interpolate 
+      for vessel in dict_var.keys():
+          temp = dict_var[vessel]
+
+          t = temp[:,0]
+          idx = np.argsort(t)
+          temp = temp[idx,:]
+
+          x = temp[:,1]
+          y = temp[:,2]
+          
+          min_x = np.amin(x)
+          max_x = np.amax(x) 
+          
+          if len(x) > 1:
+             f = interpolate.interp1d(x, y)
+             new_x = np.linspace(min_x,max_x,number_of_points)
+             new_y = f(new_x)
+             plt.plot(x,y,"x")
+             #plt.plot(new_x,new_y)
+      plt.show()
+           
   def plot_play(self,file_name="dict_nari_0.sav"):
       dict_var = joblib.load(file_name)
       import math
@@ -964,7 +1024,8 @@ class HmapSeg():
         
 if __name__ == "__main__":
    s = HmapSeg()
-   s.plot_play()
+   #s.plot_play()
+   s.interpolate_curves_plot()
    #s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
