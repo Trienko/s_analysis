@@ -175,8 +175,8 @@ class HmapSeg():
       y_value = y_value[:-1]
  
       for k in xrange(len(x_vector)):         
-          index_x = np.searchsorted(x,x_vec[k])
-          index_y = np.searchsorted(y,y_vec[k])
+          index_x = np.searchsorted(x,x_vector[k])
+          index_y = np.searchsorted(y,y_vector[k])
 
           if (index_x == two_dim_grid.shape[1]):
              index_x = index_x - 2
@@ -194,6 +194,8 @@ class HmapSeg():
               
   def interpolate_and_grid(self,file_name="dict_nari_0.sav",Nx=100,Ny=100):
       two_dim_grid = np.zeros((Ny,Nx))
+
+      
 
       dict_var = joblib.load(file_name)
       counter = 0
@@ -263,7 +265,7 @@ class HmapSeg():
                  y_interp = np.append(y_interp,y_new)
              x_interp = np.append(x_interp,x[-1])
              y_interp = np.append(y_interp,y[-1])
-             two_dim_grid = grid_single_curve(two_dim_grid,x_interp,y_inerp,min_x,max_x,min_y,max_y)
+             two_dim_grid = self.grid_single_curve(two_dim_grid,x_interp,y_interp,min_x,max_x,min_y,max_y)
              #plt.plot(x,y,"rx")
              #plt.plot(x_interp,y_interp,"x")
              #plt.title(str(vessel))
@@ -273,7 +275,8 @@ class HmapSeg():
              #plt.close()
              print(counter)
              counter = counter + 1
-      plt.imshow(two_dim_grid)
+      two_dim_grid = two_dim_grid + 1
+      plt.imshow(np.log(two_dim_grid[::-1,:]))
       plt.show()   
 
 
