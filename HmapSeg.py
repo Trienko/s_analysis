@@ -199,7 +199,17 @@ class HmapSeg():
           f_name = file_name+"_"+str(j)+".sav"
           dict_var = joblib.load(f_name)
           vessels_all = np.append(vessels_all,dict_var.keys())
-      
+          
+          for vessel in dict_var.keys():
+              f = open("./NARI_VESSELS/"+vessel+".txt","a+")
+              temp = dict_var[vessel]
+              for k in range(temp.shape[0]):
+                    #time lon lat speed
+                    f.write(str(temp[k,0])+","+str(temp[k,1])+","+str(temp[k,2])+","+str(temp[k,3])+'\n')
+              f.close()
+      f = open("./NARI_VESSELS/VESSELS.txt","w+")
+      f.writeln(str(vessels_all))
+      f.close()            
       vessels_all = vessels_all.astype(int) 
       ves_un, c = np.unique(vessels_all,return_counts=True)
       plt.plot(c,"x")
