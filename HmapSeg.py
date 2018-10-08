@@ -195,8 +195,6 @@ class HmapSeg():
   def interpolate_and_grid(self,file_name="dict_nari_0.sav",Nx=100,Ny=100):
       two_dim_grid = np.zeros((Ny,Nx))
 
-      
-
       dict_var = joblib.load(file_name)
       counter = 0
       min_x,max_x,min_y,max_y = self.find_max_min(file_name=file_name)
