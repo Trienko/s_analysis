@@ -192,87 +192,94 @@ class HmapSeg():
 
       return two_dim_grid 
               
-  def interpolate_and_grid(self,file_name="dict_nari_0.sav",Nx=100,Ny=100):
+  def interpolate_and_grid(self,file_name="dict_nari",Nx=100,Ny=100,num=19):
       two_dim_grid = np.zeros((Ny,Nx))
-
-      dict_var = joblib.load(file_name)
-      counter = 0
-      min_x,max_x,min_y,max_y = self.find_max_min(file_name=file_name)
+      min_x,max_x,min_y,max_y = self.find_max_min(file_name="dict_nari_0.sav")
+      min_x = min_x-1
+      max_x = max_x+1
+      min_y = min_y-1
+      max_y = max_y+1
       dx_grid = np.absolute(max_x-min_x)
       dy_grid = np.absolute(max_y-min_y)
       wx = dx_grid/float(Nx)
       wy = dx_grid/float(Ny)
 
-      for vessel in dict_var.keys():
-          temp = dict_var[vessel]
+      for j in range(num):
+          print(j)
+          f_name = file_name+"_"+str(j)+".sav"
+          dict_var = joblib.load(f_name)
+      	  counter = 0
 
-          t = temp[:,0]
-          idx = np.argsort(t)
-          temp = temp[idx,:]
+          for vessel in dict_var.keys():
+              temp = dict_var[vessel]
 
-          x = temp[:,1]
-          y = temp[:,2]
+              t = temp[:,0]
+              idx = np.argsort(t)
+              temp = temp[idx,:]
 
-          x_interp = np.array([])
-          y_interp = np.array([])
+              x = temp[:,1]
+              y = temp[:,2]
+
+              x_interp = np.array([])
+              y_interp = np.array([])
          
-          if len(x) > 1:
-             for k in xrange(1,len(x)):
-                 dx = x[k] - x[k-1]
-                 dy = y[k] - y[k-1]
+              if len(x) > 1:
+                for k in xrange(1,len(x)):
+                    dx = x[k] - x[k-1]
+                    dy = y[k] - y[k-1]
                  
-                 kx = np.absolute(dx)/wx
-                 ky = np.absolute(dy)/wy
+                    kx = np.absolute(dx)/wx
+                    ky = np.absolute(dy)/wy
                  
-                 if kx > ky:
-                    m = dy/dx
-                    if np.allclose(dx,0):
-                       x_interp = np.append(x_interp,x[k-1])
-                       y_interp = np.append(y_interp,y[k-1])
-                       continue
-                    else:
+                    if kx > ky:
                        m = dy/dx
+                       if np.allclose(dx,0):
+                          x_interp = np.append(x_interp,x[k-1])
+                          y_interp = np.append(y_interp,y[k-1])
+                          continue
+                       else:
+                          m = dy/dx
 
-                    c = y[k] - m*x[k]
+                       c = y[k] - m*x[k]
 
-                    kw = int(np.round((2*np.absolute(dx))/wx))
-                    if kw <= 1:
-                       kw = 2
+                       kw = int(np.round((2*np.absolute(dx))/wx))
+                       if kw <= 1:
+                          kw = 2
 
-                    x_new = np.linspace(x[k-1],x[k],kw,endpoint=False)
-                    y_new = m*x_new + c
+                       x_new = np.linspace(x[k-1],x[k],kw,endpoint=False)
+                       y_new = m*x_new + c
                     
-                 else:
-                    
-                    if np.allclose(dy,0):
-                       x_interp = np.append(x_interp,x[k-1])
-                       y_interp = np.append(y_interp,y[k-1])
-                       continue
                     else:
-                       m = dx/dy    
-
-                    c = x[k] - m*y[k] 
-                    kw = int(np.round((2*np.absolute(dy))/wy))
-                    if kw <= 1:
-                       kw = 2
                     
-                    y_new = np.linspace(y[k-1],y[k],kw,endpoint=False)
-                    x_new = m*y_new + c
+                       if np.allclose(dy,0):
+                          x_interp = np.append(x_interp,x[k-1])
+                          y_interp = np.append(y_interp,y[k-1])
+                          continue
+                       else:
+                          m = dx/dy    
 
-                 x_interp = np.append(x_interp,x_new)
-                 y_interp = np.append(y_interp,y_new)
-             x_interp = np.append(x_interp,x[-1])
-             y_interp = np.append(y_interp,y[-1])
-             two_dim_grid = self.grid_single_curve(two_dim_grid,x_interp,y_interp,min_x,max_x,min_y,max_y)
-             #plt.plot(x,y,"rx")
-             #plt.plot(x_interp,y_interp,"x")
-             #plt.title(str(vessel))
-             #plt.ylim(47,50)
-             #plt.xlim(-7,-3)
-             #plt.savefig("./TEST_ROUTES/"+str(counter)+".png")
-             #plt.close()
-             print(counter)
-             counter = counter + 1
+                       c = x[k] - m*y[k] 
+                       kw = int(np.round((2*np.absolute(dy))/wy))
+                       if kw <= 1:
+                          kw = 2
+                    
+                       y_new = np.linspace(y[k-1],y[k],kw,endpoint=False)
+                       x_new = m*y_new + c
+
+                    x_interp = np.append(x_interp,x_new)
+                    y_interp = np.append(y_interp,y_new)
+              x_interp = np.append(x_interp,x[-1])
+              y_interp = np.append(y_interp,y[-1])
+              two_dim_grid = self.grid_single_curve(two_dim_grid,x_interp,y_interp,min_x,max_x,min_y,max_y)
+              #plt.plot(x,y,"rx")
+              #plt.plot(x_interp,y_interp,"x")
+              #plt.title(str(vessel))
+              #plt.ylim(47,50)
+              #plt.xlim(-7,-3)
+              #plt.savefig("./TEST_ROUTES/"+str(counter)+".png")
+              #plt.close()
+              #print(counter)
+              #counter = counter + 1
       two_dim_grid = two_dim_grid + 1
       plt.imshow(np.log(two_dim_grid[::-1,:]))
       plt.show()   
