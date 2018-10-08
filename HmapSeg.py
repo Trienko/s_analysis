@@ -191,6 +191,24 @@ class HmapSeg():
           two_dim_grid[index_y,index_x]+=1
 
       return two_dim_grid 
+
+  def get_list_of_all_vessels(self,file_name="dict_nari",num=19):
+      vessels_all = np.array([])
+      for j in range(num):
+          print(j)
+          f_name = file_name+"_"+str(j)+".sav"
+          dict_var = joblib.load(f_name)
+          vessels_all = np.append(vessels_all,dict_var.keys())
+      
+      vessels_all = vessels_all.astype(int) 
+      ves_un, c = np.unique(vessels_all,return_counts=True)
+      plt.plot(c,"x")
+      plt.show()
+      print(vessels_all) 
+      print(ves_un)
+      print(c)
+      print(len(vessels_all))
+      print(len(ves_un))   
               
   def interpolate_and_grid(self,file_name="dict_nari",Nx=100,Ny=100,num=19):
       two_dim_grid = np.zeros((Ny,Nx))
@@ -1204,7 +1222,8 @@ if __name__ == "__main__":
    s = HmapSeg()
    #s.plot_play()
    #s.interpolate_curves_plot()
-   s.interpolate_and_grid()
+   #s.interpolate_and_grid()
+   s.get_list_of_all_vessels()
    min_x,max_x,min_y,max_y = s.find_max_min()
    print(min_x)
    print(max_x)
