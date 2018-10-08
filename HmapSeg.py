@@ -111,12 +111,94 @@ class HmapSeg():
                 min_y = min_y_t
              if max_y_t > max_y:
                 max_y = max_y_t
+          counter = counter + 1
 
       return min_x,max_x,min_y,max_y  
                 
+  def interpolate_and_grid(self,file_name="dict_nari_0.sav",Nx=100,Ny=100):
+      dict_var = joblib.load(file_name)
+      counter = 0
+      min_x,max_x,min_y,max_y = self.find_max_min(file_name=file_name)
+      dx_grid = np.absolute(max_x-min_x)
+      dy_grid = np.absolute(max_y-min_y)
+      wx = dx_grid/float(Nx)
+      wy = dx_grid/float(Ny)
+
+      for vessel in dict_var.keys():
+          temp = dict_var[vessel]
+
+          t = temp[:,0]
+          idx = np.argsort(t)
+          temp = temp[idx,:]
+
+          x = temp[:,1]
+          y = temp[:,2]
+
+          x_interp = np.array([])
+          y_interp = np.array([])
+         
+          if len(x) > 1:
+             for k in xrange(1,len(x)):
+                 dx = x[k] - x[k-1]
+                 dy = y[k] - y[k-1]
+                 
+                 kx = np.absolute(dx)/wx
+                 ky = np.absolute(dy)/wy
+                 
+                 if kx > ky:
+                    m = dy/dx
+                    if np.allclose(dx,0):
+                       x_interp = np.append(x_interp,x[k-1])
+                       y_interp = np.append(y_interp,y[k-1])
+                       continue
+                    else:
+                       m = dy/dx
+
+                    c = y[k] - m*x[k]
+
+                    kw = int(np.round((2*np.absolute(dx))/wx))
+                    if kw <= 1:
+                       kw = 2
+
+                    x_new = np.linspace(x[k-1],x[k],kw,endpoint=False)
+                    y_new = m*x_new + c
+                    
+                 else:
+                    
+                    if np.allclose(dy,0):
+                       x_interp = np.append(x_interp,x[k-1])
+                       y_interp = np.append(y_interp,y[k-1])
+                       continue
+                    else:
+                       m = dx/dy    
+
+                    c = x[k] - m*y[k] 
+                    kw = int(np.round((2*np.absolute(dy))/wy))
+                    if kw <= 1:
+                       kw = 2
+                    
+                    y_new = np.linspace(y[k-1],y[k],kw,endpoint=False)
+                    x_new = m*y_new + c
+
+                 x_interp = np.append(x_interp,x_new)
+                 y_interp = np.append(y_interp,y_new)
+             x_interp = np.append(x_interp,x[-1])
+             y_interp = np.append(y_interp,y[-1])
+             #plt.plot(x,y,"rx")
+             plt.plot(x_interp,y_interp,"x")
+             #plt.title(str(vessel))
+             #plt.ylim(47,50)
+             #plt.xlim(-7,-3)
+             #plt.savefig("./TEST_ROUTES/"+str(counter)+".png")
+             #plt.close()
+             print(counter)
+             counter = counter + 1
+      plt.show()   
+
+
   def interpolate_curves_plot(self,file_name="dict_nari_0.sav",number_of_points=100):
       dict_var = joblib.load(file_name)
-      
+      counter = 0
       from scipy import interpolate 
       for vessel in dict_var.keys():
           temp = dict_var[vessel]
@@ -135,9 +217,16 @@ class HmapSeg():
              f = interpolate.interp1d(x, y)
              new_x = np.linspace(min_x,max_x,number_of_points)
              new_y = f(new_x)
-             plt.plot(x,y,"x")
-             #plt.plot(new_x,new_y)
-      plt.show()
+             plt.plot(x,y,"rx")
+             plt.plot(new_x,new_y,"b")
+             plt.plot(x,y,"g")
+             plt.title(str(vessel))
+             plt.ylim(47,50)
+             plt.xlim(-7,-3)
+             plt.savefig("./TEST_ROUTES/"+str(counter)+".png")
+             counter = counter + 1
+             plt.close()
+      #plt.show()
            
   def plot_play(self,file_name="dict_nari_0.sav"):
       dict_var = joblib.load(file_name)
@@ -1025,7 +1114,13 @@ class HmapSeg():
 if __name__ == "__main__":
    s = HmapSeg()
    #s.plot_play()
-   s.interpolate_curves_plot()
+   #s.interpolate_curves_plot()
+   s.interpolate_and_grid()
+   min_x,max_x,min_y,max_y = s.find_max_min()
+   print(min_x)
+   print(max_x)
+   print(min_y)
+   print(max_y)
    #s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
