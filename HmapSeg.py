@@ -113,9 +113,88 @@ class HmapSeg():
                 max_y = max_y_t
           counter = counter + 1
 
-      return min_x,max_x,min_y,max_y  
-                
+      return min_x,max_x,min_y,max_y
+
+  '''
+  def gridData_to_2DMap_NARI(self,file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav'):
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      matriks = np.zeros((N-1,N-1),dtype=int)
+
+      counter = 0
+
+      with open(file_name) as infile:
+           for line in infile:
+               #print(line)
+               
+               if counter == 0:
+                  counter = counter + 1
+                  continue
+               
+               line_split = line.split(",")
+
+               lon = float(line_split[6]) 
+               lat = float(line_split[7])
+
+               index_x = np.searchsorted(x,lon)
+               index_y = np.searchsorted(y,lat)
+
+               if (index_x == N):
+                  index_x = index_x - 2
+               elif (index_x > 0):
+                  index_x = index_x - 1
+           
+               if (index_y == N):
+                  index_y = index_y - 2
+               elif (index_y > 0):
+                  index_y = index_y - 1
+ 
+               matriks[index_y,index_x]+=1
+
+               counter = counter + 1
+               if (counter % v == 0):
+                  print("counter = ",counter) 
+
+
+      joblib.dump(matriks, file_save)  
+  '''
+   
+  def grid_single_curve(self,two_dim_grid,x_vector,y_vector,min_x,max_x,min_y,max_y):
+      x = np.linspace(min_x,max_x,two_dim_grid.shape[1],endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(min_y,max_y,two_dim_grid.shape[0],endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+ 
+      for k in xrange(len(x_vector)):         
+          index_x = np.searchsorted(x,x_vec[k])
+          index_y = np.searchsorted(y,y_vec[k])
+
+          if (index_x == two_dim_grid.shape[1]):
+             index_x = index_x - 2
+          elif (index_x > 0):
+             index_x = index_x - 1
+           
+          if (index_y == two_dim_grid.shape[0]):
+             index_y = index_y - 2
+          elif (index_y > 0):
+             index_y = index_y - 1
+ 
+          two_dim_grid[index_y,index_x]+=1
+
+      return two_dim_grid 
+              
   def interpolate_and_grid(self,file_name="dict_nari_0.sav",Nx=100,Ny=100):
+      two_dim_grid = np.zeros((Ny,Nx))
+
       dict_var = joblib.load(file_name)
       counter = 0
       min_x,max_x,min_y,max_y = self.find_max_min(file_name=file_name)
@@ -184,8 +263,9 @@ class HmapSeg():
                  y_interp = np.append(y_interp,y_new)
              x_interp = np.append(x_interp,x[-1])
              y_interp = np.append(y_interp,y[-1])
+             two_dim_grid = grid_single_curve(two_dim_grid,x_interp,y_inerp,min_x,max_x,min_y,max_y)
              #plt.plot(x,y,"rx")
-             plt.plot(x_interp,y_interp,"x")
+             #plt.plot(x_interp,y_interp,"x")
              #plt.title(str(vessel))
              #plt.ylim(47,50)
              #plt.xlim(-7,-3)
@@ -193,6 +273,7 @@ class HmapSeg():
              #plt.close()
              print(counter)
              counter = counter + 1
+      plt.imshow(two_dim_grid)
       plt.show()   
 
 
