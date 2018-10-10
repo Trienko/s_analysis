@@ -16,6 +16,7 @@ import configparser
 import sys
 import os.path
 from mpl_toolkits import mplot3d
+import glob, os
 
 #llcrnrlon=22, llcrnrlat=30,urcrnrlon=30, urcrnrlat=42
 
@@ -219,7 +220,50 @@ class HmapSeg():
       print(c)
       print(len(vessels_all))
       print(len(ves_un))   
-              
+
+  def sort_according_to_time(self,dir_name = "./NARI_VESSELS"):
+      
+      os.chdir(dir_name)
+      for file_name in glob.glob("*.txt"):
+          print(file_name)
+          if file_name <> "VESSELS.txt":
+             if file_name[-5] <> "S":
+                #sort --field-separator=',' -r -k3 -k1 -k2 source.csv > target.csv worked
+                CMD = "sort --field-separator=',' -n -k1 "+file_name+" > "+file_name[:-4]+"_S.txt" 
+                #print(CMD)
+                os.system(CMD)
+                #break 
+      os.chdir("..")
+
+  def plot_all_routes(self,dir_name = "./NARI_VESSELS"):
+      os.chdir(dir_name)
+      
+      for file_name in glob.glob("*S.txt"):
+          vessel = np.array([])
+          with open(file_name) as infile:
+               for line in infile:
+
+                   line_split = line.split(",")
+                  
+                   temp_var = np.zeros((1,4))
+                   temp_var[0,0] = float(line_split[0]) #time
+                   temp_var[0,1] = float(line_split[1]) #lon
+                   temp_var[0,2] = float(line_split[2]) #lat
+                   temp_var[0,3] = float(line_split[3]) #speed
+
+                   if len(vessel) == 0:
+                      vessel = temp_var
+                   else:
+                      vessel = np.vstack((vessel,temp_var))
+
+          plt.plot(vessel[:,1],vessel[:,2],"rx")
+          plt.title(file_name[:-6]) 
+          plt.xlim(-8,-2)
+          plt.ylim(45,50)
+          plt.savefig(file_name[:-6]+".png")
+          plt.close()
+      os.chdir("..")   
+             
   def interpolate_and_grid(self,file_name="dict_nari",Nx=100,Ny=100,num=19):
       two_dim_grid = np.zeros((Ny,Nx))
       min_x,max_x,min_y,max_y = self.find_max_min(file_name="dict_nari_0.sav")
@@ -1233,7 +1277,9 @@ if __name__ == "__main__":
    #s.plot_play()
    #s.interpolate_curves_plot()
    #s.interpolate_and_grid()
-   s.get_list_of_all_vessels()
+   s.plot_all_routes()
+   #s.get_list_of_all_vessels()
+   #s.sort_according_to_time()
    min_x,max_x,min_y,max_y = s.find_max_min()
    print(min_x)
    print(max_x)
