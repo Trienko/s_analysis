@@ -208,7 +208,7 @@ class HmapSeg():
                     f.write(str(temp[k,0])+","+str(temp[k,1])+","+str(temp[k,2])+","+str(temp[k,3])+'\n')
               f.close()
       f = open("./NARI_VESSELS/VESSELS.txt","w+")
-      f.writeln(str(vessels_all))
+      f.write(str(vessels_all))
       f.close()            
       vessels_all = vessels_all.astype(int) 
       ves_un, c = np.unique(vessels_all,return_counts=True)
