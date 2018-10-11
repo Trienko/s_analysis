@@ -116,6 +116,58 @@ class HmapSeg():
 
       return min_x,max_x,min_y,max_y
 
+  def find_max_min_two(self,dir_name="./NARI_VESSELS"):
+      #227705102
+      os.chdir(dir_name)
+      min_x = 0
+      max_x = 0 
+      min_y = 0
+      max_y = 0
+      counter = 0
+      for file_name in glob.glob("*S.txt"):
+          vessel = np.array([])
+          print(file_name)
+          with open(file_name) as infile:
+               for line in infile:
+
+                   line_split = line.split(",")
+                   temp_var = np.zeros((1,4))
+                   temp_var[0,0] = float(line_split[0]) #time
+                   temp_var[0,1] = float(line_split[1]) #lon
+                   temp_var[0,2] = float(line_split[2]) #lat
+                   temp_var[0,3] = float(line_split[3]) #speed
+                   if len(vessel) == 0:
+                      vessel = temp_var
+                   else:
+                      vessel = np.vstack((vessel,temp_var))
+
+          x = vessel[:,1] #
+          y = vessel[:,2]
+          
+          if counter == 0:
+             min_x = np.amin(x)
+             max_x = np.amax(x) 
+             min_y = np.amin(y)
+             max_y = np.amax(y)
+          else:
+             min_x_t = np.amin(x)
+             max_x_t = np.amax(x) 
+             min_y_t = np.amin(y)
+             max_y_t = np.amax(y)
+            
+             if min_x_t < min_x:
+                min_x = min_x_t
+             if max_x_t > max_x:
+                max_x = max_x_t
+             if min_y_t < min_y:
+                min_y = min_y_t
+             if max_y_t > max_y:
+                max_y = max_y_t
+          counter = counter + 1
+
+      return min_x,max_x,min_y,max_y
+
+
   '''
   def gridData_to_2DMap_NARI(self,file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav'):
       x = np.linspace(-180,180,N,endpoint=True)
@@ -237,31 +289,37 @@ class HmapSeg():
 
   def plot_all_routes(self,dir_name = "./NARI_VESSELS"):
       os.chdir(dir_name)
-      
+      c = 0
       for file_name in glob.glob("*S.txt"):
           vessel = np.array([])
           with open(file_name) as infile:
-               for line in infile:
-
-                   line_split = line.split(",")
+               if file_name == "227705102_S.txt":
+                  for line in infile:
+                      
+                      if (c%5000 == 0):
+                         print(c)
+                      c = c+1
+                      line_split = line.split(",")
                   
-                   temp_var = np.zeros((1,4))
-                   temp_var[0,0] = float(line_split[0]) #time
-                   temp_var[0,1] = float(line_split[1]) #lon
-                   temp_var[0,2] = float(line_split[2]) #lat
-                   temp_var[0,3] = float(line_split[3]) #speed
+                  
 
-                   if len(vessel) == 0:
-                      vessel = temp_var
-                   else:
-                      vessel = np.vstack((vessel,temp_var))
+                      temp_var = np.zeros((1,4))
+                      temp_var[0,0] = float(line_split[0]) #time
+                      temp_var[0,1] = float(line_split[1]) #lon
+                      temp_var[0,2] = float(line_split[2]) #lat
+                      temp_var[0,3] = float(line_split[3]) #speed
 
-          plt.plot(vessel[:,1],vessel[:,2],"rx")
-          plt.title(file_name[:-6]) 
-          plt.xlim(-8,-2)
-          plt.ylim(45,50)
-          plt.savefig(file_name[:-6]+".png")
-          plt.close()
+                      if len(vessel) == 0:
+                         vessel = temp_var
+                      else:
+                         vessel = np.vstack((vessel,temp_var))
+
+                  plt.plot(vessel[:,1],vessel[:,2],"rx")
+                  plt.title(file_name[:-6]) 
+                  plt.xlim(-8,-2)
+                  plt.ylim(45,50)
+                  plt.savefig(file_name[:-6]+".png")
+                  plt.close()
       os.chdir("..")   
              
   def interpolate_and_grid(self,file_name="dict_nari",Nx=100,Ny=100,num=19):
@@ -1277,10 +1335,17 @@ if __name__ == "__main__":
    #s.plot_play()
    #s.interpolate_curves_plot()
    #s.interpolate_and_grid()
-   s.plot_all_routes()
+   #s.plot_all_routes()
    #s.get_list_of_all_vessels()
    #s.sort_according_to_time()
+   s.plot_all_routes()
    min_x,max_x,min_y,max_y = s.find_max_min()
+   print(min_x)
+   print(max_x)
+   print(min_y)
+   print(max_y)
+   
+   #min_x,max_x,min_y,max_y = s.find_max_min_two()
    print(min_x)
    print(max_x)
    print(min_y)
