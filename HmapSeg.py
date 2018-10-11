@@ -39,6 +39,45 @@ class HmapSeg():
       matA = np.round(matA*fac).astype(np.uint8)
       return matA
 
+  def countVessels(self,file_name="nari_dynamic.csv",file_save="vessel_count.sav",p=1000000):
+      
+      v = np.array([])
+      f = np.array([])
+      counter = 0
+      
+      with open(file_name) as infile:
+           for line in infile:
+
+               if counter == 0:
+                  counter = counter + 1
+                  continue
+
+               line_split = line.split(",")
+
+               mmsi = int(line_split[0])
+
+               if mmsi in v:
+                  f[v==mmsi] +=1
+               else:
+                  v = np.append(v,np.array([mmsi]))
+                  f = np.append(f,np.array([1]))
+               if counter%p == 0:
+                  print(counter)
+               counter = counter + 1
+      v = v.reshape((1,len(v)))
+      f = f.reshape((1,len(f)))
+      v_f = np.vstack((v,f))
+      joblib.dump(v_f, file_save)      
+      plt.plot(f[0,:],"rx")    
+      plt.show()
+
+  def sortAccordingtoMMSIandTime(SELF,file_name="nari_dynamic.csv"):
+      #sort --field-separator=',' -r -k3 -k1 -k2 source.csv > target.csv worked
+      CMD = "sort --field-separator=',' -n -k1 -k9 "+file_name+" > "+"nari_sorted.csv" 
+      os.system(CMD)
+      
+  #def createVesselDictionaries(file_name="nari_dynamic.csv"):
+      
   def create_Dictionary_NARI(self,file_name="nari_dynamic.csv",file_save = "dict_nari",v=1000000):
       nari = {}
       #counter = 0
@@ -72,9 +111,8 @@ class HmapSeg():
                   temp_var[0,3] = float(line_split[3]) #speed
                   nari[line_split[0]] = np.vstack((nari[line_split[0]],temp_var))
   
-               
                if counter%v == 0:
-                  joblib.dump(nari, file_save+"_"+str(f_count)+".sav")
+                  joblib.dump(nari,file_save+"_"+str(f_count)+".sav")
                   nari = {}
                   f_count = f_count + 1
                   print(counter)
@@ -1338,7 +1376,8 @@ if __name__ == "__main__":
    #s.plot_all_routes()
    #s.get_list_of_all_vessels()
    #s.sort_according_to_time()
-   s.plot_all_routes()
+   #s.plot_all_routes()
+   s.countVessels()
    min_x,max_x,min_y,max_y = s.find_max_min()
    print(min_x)
    print(max_x)
