@@ -216,15 +216,76 @@ class HmapSeg():
 
       return min_x,max_x,min_y,max_y
 
+  def plot_sepcific_vessel(self,vessel_mmsi=227705102,num_points=1032332,dir_name="NARI_VESSELS"):
+      #VESSEL 227705102
+      #2015-10-01 00:00:00 UTC to 2016-03-31 23:59:59 UTC
+      #Thu Oct  1 00:00:03 2015
+      #Thu Mar 31 17:00:46 2016
+
+      traj = joblib.load("./"+dir_name+"/"+str(vessel_mmsi)+".sav")
+      print(traj.shape)
+      import datetime 
+      print(datetime.datetime.fromtimestamp(traj[0,0]).strftime('%c'))
+      print(datetime.datetime.fromtimestamp(traj[-1,0]).strftime('%c'))
+      
+      tbegin = 0
+      dt_plt = 100000
+      final = traj.shape[0]
+      c = ["r","b","g","y","c","m","k"]
+      counter = 0
+             
+      #plt.hold(True)
+      while (tbegin<final):
+            if tbegin+dt_plt <=final:
+               x = traj[tbegin:tbegin+dt_plt,1]
+               y = traj[tbegin:tbegin+dt_plt,2]
+               plt.plot(x,y,"x"+c[counter%7],alpha=0.01,label=datetime.datetime.fromtimestamp(traj[tbegin,0]).strftime('%c'))
+               plt.hold(True)  
+               print("***************************")
+               print(datetime.datetime.fromtimestamp(traj[tbegin,0]).strftime('%c'))
+               print(datetime.datetime.fromtimestamp(traj[tbegin+dt_plt,0]).strftime('%c'))
+               print("***************************")
+            else:
+               x = traj[tbegin:,1]
+               y = traj[tbegin:,2]
+               plt.plot(x,y,"x"+c[counter%7],alpha=0.01,label=datetime.datetime.fromtimestamp(traj[tbegin,0]).strftime('%c'))
+               print("***************************")
+               print(datetime.datetime.fromtimestamp(traj[tbegin,0]).strftime('%c'))
+               print(datetime.datetime.fromtimestamp(traj[-1,0]).strftime('%c'))
+               print("***************************")
+            tbegin = tbegin + dt_plt
+            counter = counter+1
+            #plt.pause(0.05)
+      plt.legend()
+      plt.show()
+            
+      #plt.legend()
+      #plt.show()
+  
+      x = traj[:num_points,1]
+      y = traj[:num_points,2]
+      
+      plt.plot(x,y,"r")
+      plt.show()
+      t1 = traj[:-1,0]
+      t2 = traj[1:,0]
+      dt = (t2-t1)/3600
+      #plt.plot(dt/3600,"rx")
+      x = x[:-1]
+      y = y[:-1]
+      plt.plot(x,y,"r")
+      plt.plot(x[dt>0.01],y[dt>0.01],"bx",ms=10)
+      plt.show()
+
   def find_max_min_two(self,dir_name="./NARI_VESSELS"):
-      #227705102
+      #PROBELM VESSEL ---> 227705102
       os.chdir(dir_name)
       min_x = 0
       max_x = 0 
       min_y = 0
       max_y = 0
       counter = 0
-      for file_name in glob.glob("*S.txt"):
+      for file_name in glob.glob("*.sav"):
           vessel = np.array([])
           print(file_name)
           with open(file_name) as infile:
@@ -1439,7 +1500,8 @@ if __name__ == "__main__":
    #s.get_list_of_all_vessels()
    #s.sort_according_to_time()
    #s.plot_all_routes()
-   s.createVesselDictionaries()
+   #s.createVesselDictionaries()
+   s.plot_sepcific_vessel()
    #s.countVessels()
    #min_x,max_x,min_y,max_y = s.find_max_min()
    #print(min_x)
