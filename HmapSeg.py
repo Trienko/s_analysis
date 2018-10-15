@@ -41,8 +41,8 @@ class HmapSeg():
 
   def countVessels(self,file_name="nari_dynamic.csv",file_save="vessel_count.sav",p=1000000):
       
-      v = np.array([])
-      f = np.array([])
+      v = np.array([],dtype=int)
+      f = np.array([],dtype=int)
       counter = 0
       
       with open(file_name) as infile:
@@ -90,34 +90,41 @@ class HmapSeg():
 
       with open(file_name) as infile:
            for line in infile:
-               if line_counter <= 1:
+               if line_counter < 1:
                   line_counter = line_counter + 1
-                  print(line)
+                  print(line[:-1])
                   continue
                if line_counter < 20:
-                  print(line)
+                  print("new line")
+                  print(line[:-1])
              
                line_split = line[:-1].split(',')
                temp_mmsi = int(line_split[0])
                
                if (current_mmsi<>temp_mmsi):
                   if current_mmsi <> -1:
-                     joblib.dump(temp_matrix,"./"+dir_name+"/"+current_mmsi+".sav")
-                  rows = f[v==temp_mmsi]
+                     joblib.dump(temp_matrix,"./"+dir_name+"/"+str(current_mmsi)+".sav")
+                  rows = f[v==temp_mmsi][0]
+                  #print("rows")
+                  #print(rows)
                   columns = 5
                   observation_counter = 0
                   temp_matrix = np.zeros((rows,columns),dtype=float)
+                  current_mmsi = temp_mmsi
 
-               temp_matrix[0,0] = float(line_split[8]) #time
-               temp_matrix[0,1] = float(line_split[6]) #lon
-               temp_matrix[0,2] = float(line_split[7]) #lat
-               temp_matrix[0,3] = float(line_split[3]) #speed
-               temp_matrix[0,4] = temp_mmsi
+               temp_matrix[observation_counter,0] = float(line_split[8]) #time
+               temp_matrix[observation_counter,1] = float(line_split[6]) #lon
+               temp_matrix[observation_counter,2] = float(line_split[7]) #lat
+               temp_matrix[observation_counter,3] = float(line_split[3]) #speed
+               temp_matrix[observation_counter,4] = temp_mmsi
                observation_counter = observation_counter+1
+               line_counter = line_counter+1
                if line_counter%p == 0:
                   print("CONSTRUCTING VESSEL DICTIONARIES")
                   print(line_counter) 
 
+
+      joblib.dump(temp_matrix,"./"+dir_name+"/"+str(current_mmsi)+".sav") 
                
       
 
