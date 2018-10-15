@@ -52,9 +52,14 @@ class HmapSeg():
                   counter = counter + 1
                   continue
 
-               line_split = line.split(",")
+               line_split = line[:-1].split(",")
 
                mmsi = int(line_split[0])
+
+               if counter < 20:
+                  print(line[:-1])
+                  #print(mmsi)
+                  #print(line_split)
 
                if mmsi in v:
                   f[v==mmsi] +=1
@@ -62,20 +67,70 @@ class HmapSeg():
                   v = np.append(v,np.array([mmsi]))
                   f = np.append(f,np.array([1]))
                if counter%p == 0:
+                  print("COUNTING VESSELS: ")
                   print(counter)
                counter = counter + 1
+      idx_sort = np.argsort(v)
+      v = v[idx_sort]
+      f = f[idx_sort]
       v = v.reshape((1,len(v)))
       f = f.reshape((1,len(f)))
       v_f = np.vstack((v,f))
-      joblib.dump(v_f, file_save)      
-      plt.plot(f[0,:],"rx")    
-      plt.show()
+      joblib.dump(v_f, file_save) 
+      return v,f     
+      #plt.plot(f[0,:],"rx")    
+      #plt.show()
 
-  def sortAccordingtoMMSIandTime(SELF,file_name="nari_dynamic.csv"):
+  def createVesselDictionaries(self,file_name="nari_sort.csv",unsorted_file="nari_dynamic.csv",dir_name="NARI_VESSELS",p=1000000):
+      v,f = self.countVessels(file_name=unsorted_file)
+      observation_counter = 0
+      current_mmsi = -1
+      temp_matrix = np.array([])
+      line_counter = 0
+
+      with open(file_name) as infile:
+           for line in infile:
+               if line_counter <= 1:
+                  line_counter = line_counter + 1
+                  print(line)
+                  continue
+               if line_counter < 20:
+                  print(line)
+             
+               line_split = line[:-1].split(',')
+               temp_mmsi = int(line_split[0])
+               
+               if (current_mmsi<>temp_mmsi):
+                  if current_mmsi <> -1:
+                     joblib.dump(temp_matrix,"./"+dir_name+"/"+current_mmsi+".sav")
+                  rows = f[v==temp_mmsi]
+                  columns = 5
+                  observation_counter = 0
+                  temp_matrix = np.zeros((rows,columns),dtype=float)
+
+               temp_matrix[0,0] = float(line_split[8]) #time
+               temp_matrix[0,1] = float(line_split[6]) #lon
+               temp_matrix[0,2] = float(line_split[7]) #lat
+               temp_matrix[0,3] = float(line_split[3]) #speed
+               temp_matrix[0,4] = temp_mmsi
+               observation_counter = observation_counter+1
+               if line_counter%p == 0:
+                  print("CONSTRUCTING VESSEL DICTIONARIES")
+                  print(line_counter) 
+
+               
+      
+
+  def sortAccordingtoMMSIandTime(self,file_name="nari_dynamic.csv"):
       #sort --field-separator=',' -r -k3 -k1 -k2 source.csv > target.csv worked
       CMD = "sort --field-separator=',' -n -k1 -k9 "+file_name+" > "+"nari_sorted.csv" 
       os.system(CMD)
-      
+      #NB ---> sort -t ',' -k1,1n -k9,9n ship.txt > sort.txt
+      #https://unix.stackexchange.com/questions/78925/how-to-sort-by-multiple-columns/78926
+      #(head -n 1 data.tsv && tail -n +2 data.tsv  | sort -k1 -t'     ') > data_sorted.tsv       
+      #NB2 (sorting with header) ---> (head -n 1 ship.txt && tail -n +2 ship.txt | sort -t ',' -k1,1n -k9,9n) > sort.txt
+      #NB2 (sorting with header) ---> (head -n 1 nari_dynamic.csv && tail -n +2 nari_dynamic.csv | sort -t ',' -k1,1n -k9,9n) > nari_sort.csv 
+
   #def createVesselDictionaries(file_name="nari_dynamic.csv"):
       
   def create_Dictionary_NARI(self,file_name="nari_dynamic.csv",file_save = "dict_nari",v=1000000):
@@ -1377,18 +1432,19 @@ if __name__ == "__main__":
    #s.get_list_of_all_vessels()
    #s.sort_according_to_time()
    #s.plot_all_routes()
-   s.countVessels()
-   min_x,max_x,min_y,max_y = s.find_max_min()
-   print(min_x)
-   print(max_x)
-   print(min_y)
-   print(max_y)
+   s.createVesselDictionaries()
+   #s.countVessels()
+   #min_x,max_x,min_y,max_y = s.find_max_min()
+   #print(min_x)
+   #print(max_x)
+   #print(min_y)
+   #print(max_y)
    
    #min_x,max_x,min_y,max_y = s.find_max_min_two()
-   print(min_x)
-   print(max_x)
-   print(min_y)
-   print(max_y)
+   #print(min_x)
+   #print(max_x)
+   #print(min_y)
+   #print(max_y)
    #s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
