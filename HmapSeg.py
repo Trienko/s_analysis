@@ -116,7 +116,7 @@ class HmapSeg():
                temp_matrix[observation_counter,1] = float(line_split[6]) #lon
                temp_matrix[observation_counter,2] = float(line_split[7]) #lat
                temp_matrix[observation_counter,3] = float(line_split[3]) #speed
-               temp_matrix[observation_counter,4] = temp_mmsi
+               temp_matrix[observation_counter,4] = current_mmsi
                observation_counter = observation_counter+1
                line_counter = line_counter+1
                if line_counter%p == 0:
@@ -286,24 +286,12 @@ class HmapSeg():
       max_y = 0
       counter = 0
       for file_name in glob.glob("*.sav"):
-          vessel = np.array([])
-          print(file_name)
-          with open(file_name) as infile:
-               for line in infile:
+          traj = joblib.load(file_name)
 
-                   line_split = line.split(",")
-                   temp_var = np.zeros((1,4))
-                   temp_var[0,0] = float(line_split[0]) #time
-                   temp_var[0,1] = float(line_split[1]) #lon
-                   temp_var[0,2] = float(line_split[2]) #lat
-                   temp_var[0,3] = float(line_split[3]) #speed
-                   if len(vessel) == 0:
-                      vessel = temp_var
-                   else:
-                      vessel = np.vstack((vessel,temp_var))
+          print(counter)
 
-          x = vessel[:,1] #
-          y = vessel[:,2]
+          x = traj[:,1] #
+          y = traj[:,2]
           
           if counter == 0:
              min_x = np.amin(x)
@@ -448,39 +436,46 @@ class HmapSeg():
                 #break 
       os.chdir("..")
 
+  def print_specific_route(self,dir_name = "./NARI_VESSELS",mmsi=923166):
+      os.chdir(dir_name)
+      counter = 0;
+      for file_name in glob.glob("*.sav"):
+          traj = joblib.load(file_name)
+
+          #if counter == 0:
+          #   print(traj)
+
+          if file_name[:-4] == str(mmsi):
+             print(traj)
+
+      os.chidir("..")
+ 
+
+
   def plot_all_routes(self,dir_name = "./NARI_VESSELS"):
       os.chdir(dir_name)
-      c = 0
-      for file_name in glob.glob("*S.txt"):
-          vessel = np.array([])
-          with open(file_name) as infile:
-               if file_name == "227705102_S.txt":
-                  for line in infile:
-                      
-                      if (c%5000 == 0):
-                         print(c)
-                      c = c+1
-                      line_split = line.split(",")
-                  
-                  
+      counter = 0;
+      for file_name in glob.glob("*.sav"):
+          traj = joblib.load(file_name)
 
-                      temp_var = np.zeros((1,4))
-                      temp_var[0,0] = float(line_split[0]) #time
-                      temp_var[0,1] = float(line_split[1]) #lon
-                      temp_var[0,2] = float(line_split[2]) #lat
-                      temp_var[0,3] = float(line_split[3]) #speed
+          #if counter == 0:
+          #   print(traj)
 
-                      if len(vessel) == 0:
-                         vessel = temp_var
-                      else:
-                         vessel = np.vstack((vessel,temp_var))
+          #if file_name == "923166":
+          #   print(traj)
 
-                  plt.plot(vessel[:,1],vessel[:,2],"rx")
-                  plt.title(file_name[:-6]) 
-                  plt.xlim(-8,-2)
-                  plt.ylim(45,50)
-                  plt.savefig(file_name[:-6]+".png")
-                  plt.close()
+          print("PLOTTING: "+str(counter))
+
+          x = traj[:,1] #
+          y = traj[:,2]
+      
+          plt.plot(x,y,"rx",alpha=0.5)
+          plt.title(file_name[:-4]+":"+str(traj.shape[0])) 
+          plt.xlim(-10,0)
+          plt.ylim(45,51)
+          plt.savefig(file_name[:-4]+".png")
+          plt.close()
+          counter = counter+1
       os.chdir("..")   
              
   def interpolate_and_grid(self,file_name="dict_nari",Nx=100,Ny=100,num=19):
@@ -704,6 +699,82 @@ class HmapSeg():
 
       #print(t[idx])
       #break
+  
+  def gridData_dcon(self,file_name="DCRON.csv",N=10001,v=1000000,file_save='TwoDGridDCRON.sav'):
+      x = np.linspace(-180,180,N,endpoint=True)
+      x_value = x + (x[1]-x[2])/2.0
+      x_value = x_value[:-1]
+
+      y = np.linspace(-90,90,N,endpoint=True)
+      y_value = y + (y[1]-y[2])/2.0
+      y_value = y_value[:-1]
+
+      matriks = np.zeros((N-1,N-1),dtype=int)
+
+      counter = 0
+
+      with open(file_name) as infile:
+           for line in infile:
+               #print(line)
+               
+               if counter == 0:
+                  counter = counter + 1
+                  print(line)
+                  continue
+               
+               line_split = line.split(",")
+               #print(line_split) 
+               if line_split[0] == '"MMSI"':
+                  continue
+               lat_string = line_split[1]
+               lat_string = lat_string[1:-1]
+               lat_split = lat_string.split(".")
+
+               lon_string = line_split[2]
+               lon_string = lat_string[1:-1]
+               lon_split = lon_string.split(".")
+               
+               lat_r = float(lat_split[1])/10**len(lat_split[1])
+               lon_r = float(lon_split[1])/10**len(lon_split[1])
+
+               if float(lat_split[0][:-2]) >= 0:
+                  lat = float(lat_split[0][:-2]) + (float(lat_split[0][-2:])+lat_r)/60
+               else:
+                  lat = float(lat_split[0][:-2]) - (float(lat_split[0][-2:])+lat_r)/60
+               if float(lon_split[0][:-2]) >= 0:    
+                  lon = float(lon_split[0][:-2]) + (float(lon_split[0][-2:])+lon_r)/60 
+               else:
+                  lon = float(lon_split[0][:-2]) - (float(lon_split[0][-2:])+lon_r)/60
+ 
+               index_x = np.searchsorted(x,lon)
+               index_y = np.searchsorted(y,lat)
+
+               if (index_x == N):
+                  index_x = index_x - 2
+               elif (index_x > 0):
+                  index_x = index_x - 1
+           
+               if (index_y == N):
+                  index_y = index_y - 2
+               elif (index_y > 0):
+                  index_y = index_y - 1
+ 
+               matriks[index_y,index_x]+=1
+
+               counter = counter + 1
+               if (counter % v == 0):
+                  print("counter = ",counter)
+                  #print("latstring = ",lat_string)
+                  #print("lat = ",lat) 
+                  #print("lat_r = ",lat_r)
+
+
+                  #print("lonstring = ",lon_string)
+                  #print("lon = ",lon) 
+
+      joblib.dump(matriks, file_save)
+
+
   def gridData_to_2DMap_NARI(self,file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav'):
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
@@ -1493,6 +1564,9 @@ class HmapSeg():
         
 if __name__ == "__main__":
    s = HmapSeg()
+   #s.plot_all_routes()
+   s.gridData_dcon()
+   #s.print_specific_route()
    #s.plot_play()
    #s.interpolate_curves_plot()
    #s.interpolate_and_grid()
@@ -1501,7 +1575,7 @@ if __name__ == "__main__":
    #s.sort_according_to_time()
    #s.plot_all_routes()
    #s.createVesselDictionaries()
-   s.plot_sepcific_vessel()
+   #s.plot_sepcific_vessel()
    #s.countVessels()
    #min_x,max_x,min_y,max_y = s.find_max_min()
    #print(min_x)
@@ -1514,6 +1588,11 @@ if __name__ == "__main__":
    #print(max_x)
    #print(min_y)
    #print(max_y)
+   #-9.713331
+   #-0.015736667
+   #45.001045
+   #50.887634
+
    #s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
