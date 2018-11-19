@@ -1490,6 +1490,7 @@ class HmapSeg():
       if plot_img:
          map = Basemap(resolution='h',llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat)
          map.drawcoastlines()
+         plt.show()
 
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
@@ -1507,11 +1508,14 @@ class HmapSeg():
 
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
-      matriks=''
+      #matriks=''
+
+      x = np.amax(matriks)
+      print(x)
       
       sub_m = np.log(sub_m+1)
       if plot_img:
-         map.imshow(sub_m)
+         map.imshow(np.log(matriks+1),vmax=3)
          plt.show()
 
       return sub_m.shape
@@ -1565,7 +1569,8 @@ class HmapSeg():
 if __name__ == "__main__":
    s = HmapSeg()
    #s.plot_all_routes()
-   s.gridData_dcon()
+   #s.gridData_dcon()
+   s.plotEU(file_save='TwoDGridDCRON.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
    #s.print_specific_route()
    #s.plot_play()
    #s.interpolate_curves_plot()
