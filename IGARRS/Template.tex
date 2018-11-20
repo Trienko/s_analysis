@@ -17,7 +17,7 @@
 
 % Title.
 % ------
-\title{Extracting linear routes from heatmaps. An AIS Case Study in Europe.}
+\title{Extracting linear routes from European AIS heatmaps.}
 %
 % Single address.
 % ---------------
@@ -62,12 +62,26 @@ Principal Component Analhysis (PCA), dimensionality reduction, harmonic analysis
 \begin{abstract}
 \end{abstract}
 
+\textbf{TODO::} Moet kort literatuur opsomming gee. Insluitende wat Trajectory datamining is ens... Belangrike papers noem. Lees paar papers hier om oorsig te kry. Beskryf wat is 
+AIS data.
+
+\textbf{TODO::} Noem dat die paper is 'n top down approach. Noem die voordele van die metode:
+a) Capable of etracting high traffic routes used primarily for long distance travel. b) Gain insight into data quickly. c) Easily subdivide data so that it can processed
+further. Have to think of more reasons as to why this top-down approach is useful. d) Identify low traffic regions and high traffic regions. e) Analyze how traffic makes 
+use of high volume routes.
+
+\textbf{TODO::} We start with a heat-map and ask what useful information can we extract from naively gridding AIS data and analyzing the created heatmap.
 
 Often, when we first inspect a dataset containing the temporal-spatial coordinates of multiple objects (i.e. the movements of say humans, animals or vessels)
 we would create a heat-map (grid data onto a two-dimensional grid) so that we can build some intuition (gather information) about the data.
 The information we extract from heat-maps (insight gained) can then be used to further analyze the original data. Some examples of the useful kind of information which can be extracted from a 
 heat-map include: high traffic volume routes and regions. In this paper, we present an automatic heat-map segmentation algorithm which will allow us to automatically extract the 
  aforementioned pieces of information. In this paper we focus primarily on AIS data (shipping data). 
+ 
+\section{DATA SET AND STUDY REGIONS}
+Hallo
+
+\textbf{TODO::} Add description of study regions --- Iets soos die datastel is verskaf deur company xxx as deel van projek xxx en is geneem van xx tot xx oor Europa. Die AIS data is opgeneem deur satelliete xxx en yyy. Die data is oop vir lede van navorsingsgroep kkk.
  
 The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. 
 
@@ -98,6 +112,14 @@ The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1.
  \State $\textrm{heatmap[landmask]} \gets 0$
  \Comment{segmentation}
  \State plot(heatmap)
+ 
+ \section{Methodology}
+ \textbf{TODO::} Small description on Thresholoding. Binary opening. Houghtransform. Polygonization. Each one seperate section. Overall description of algorithm. Add picture of Hough 
+ transform of the binary image and discuss. Short description of Hough transform maybe. 
+ 
+ \section{Results}
+ \textbf{TODO::} Beskryf wat reg is wat verkeerd is hoe mens iteratief kan verbeter. Goeie punt om dit regtig uit te le....
+ 
  
 % \State $\textit{stringlen} \gets \text{length of }\textit{string}$
 % \State $i \gets \textit{patlen}$
