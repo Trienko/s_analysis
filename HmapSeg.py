@@ -731,9 +731,22 @@ class HmapSeg():
                lat_split = lat_string.split(".")
 
                lon_string = line_split[2]
-               lon_string = lat_string[1:-1]
-               lon_split = lon_string.split(".")
+               lon_string = lon_string[1:-1]
+               #print(lon_string)
                
+               lon_split = lon_string.split(".")
+              
+               ## -0 BUG WILL STILL POPUPS FOR LATTITUDE --- VERY HACKY SOLUTION!!!
+               lon_DD = lon_split[0][:-2]
+               if len(lon_DD) == 0:
+                  lon_DD = 0
+               else: 
+                  if lon_DD == '-':
+                     lon_DD = 0
+                  else:
+                     lon_DD = float(lon_split[0][:-2])
+                  
+
                lat_r = float(lat_split[1])/10**len(lat_split[1])
                lon_r = float(lon_split[1])/10**len(lon_split[1])
 
@@ -741,13 +754,18 @@ class HmapSeg():
                   lat = float(lat_split[0][:-2]) + (float(lat_split[0][-2:])+lat_r)/60
                else:
                   lat = float(lat_split[0][:-2]) - (float(lat_split[0][-2:])+lat_r)/60
-               if float(lon_split[0][:-2]) >= 0:    
-                  lon = float(lon_split[0][:-2]) + (float(lon_split[0][-2:])+lon_r)/60 
+               if float(lon_split[0]) >= 0:    
+                  lon = lon_DD + (float(lon_split[0][-2:])+lon_r)/60 
                else:
-                  lon = float(lon_split[0][:-2]) - (float(lon_split[0][-2:])+lon_r)/60
+                  lon = lon_DD - (float(lon_split[0][-2:])+lon_r)/60
  
                index_x = np.searchsorted(x,lon)
                index_y = np.searchsorted(y,lat)
+
+               #if counter < 10000:
+               #   plt.plot(lon,lat,"bx")
+               #else:
+               #   break
 
                if (index_x == N):
                   index_x = index_x - 2
@@ -771,7 +789,7 @@ class HmapSeg():
 
                   #print("lonstring = ",lon_string)
                   #print("lon = ",lon) 
-
+      plt.show()
       joblib.dump(matriks, file_save)
 
 
@@ -1490,7 +1508,7 @@ class HmapSeg():
       if plot_img:
          map = Basemap(resolution='h',llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat)
          map.drawcoastlines()
-         plt.show()
+         
 
       x = np.linspace(-180,180,N,endpoint=True)
       x_value = x + (x[1]-x[2])/2.0
@@ -1508,14 +1526,14 @@ class HmapSeg():
 
       matriks = joblib.load(file_save)
       sub_m = matriks[index_y_1:index_y_2,index_x_1:index_x_2]
-      #matriks=''
+      matriks=''
 
-      x = np.amax(matriks)
-      print(x)
+      #x = np.amax(matriks)
+      #print(x)
       
       sub_m = np.log(sub_m+1)
       if plot_img:
-         map.imshow(np.log(matriks+1),vmax=3)
+         map.imshow(sub_m)
          plt.show()
 
       return sub_m.shape
@@ -1567,10 +1585,10 @@ class HmapSeg():
       return parameter_dictionary
         
 if __name__ == "__main__":
-   s = HmapSeg()
+   #s = HmapSeg()
    #s.plot_all_routes()
    #s.gridData_dcon()
-   s.plotEU(file_save='TwoDGridDCRON.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
+   #s.plotEU(file_save='TwoDGridDCRON.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
    #s.print_specific_route()
    #s.plot_play()
    #s.interpolate_curves_plot()
@@ -1601,7 +1619,7 @@ if __name__ == "__main__":
    #s.create_Dictionary_NARI()
    #s.gridData_to_2DMap_NARI(file_name="nari_dynamic.csv",N=10001,v=1000000,file_save='TwoDGridNARI.sav')
    #s.plotEU(file_save='TwoDGrid.sav',N=10001,llcrnrlon=-10,llcrnrlat=45,urcrnrlon=0,urcrnrlat=51,plot_img=True)
-   '''
+   
    config_file = sys.argv[1]
    s = HmapSeg()
    #s.drawWorldMap()
@@ -1625,7 +1643,7 @@ if __name__ == "__main__":
    #RUN SEGMENTATION ALGORITHM
    print("RUN SEGMENTATION ALGORITHM")  
    s.polygonSegmentation(file_save=d_parm["global_heatmap"],N=d_parm["n"], mask_file=d_parm["large_coast_line_mask"], water_mask = d_parm["water_mask"], resolution=d_parm["resolution"],llcrnrlon=d_parm["llcrnrlon"],llcrnrlat=d_parm["llcrnrlat"],urcrnrlon=d_parm["urcrnrlon"],urcrnrlat=d_parm["urcrnrlat"], m_size = d_parm["m_size"], threshold=d_parm["threshold"], o_size = d_parm["o_size"], min_distance=d_parm["min_distance"], min_angle=d_parm["min_angle"], h_threshold=d_parm["h_threshold"],num_peaks=d_parm["num_peaks"],config_file=config_file)  
-   '''
+   
    #print(dim)
    #print(d_parm)
    #s.polygonSegmentation()
