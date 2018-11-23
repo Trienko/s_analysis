@@ -177,17 +177,33 @@ segment the original heat-map into different regions using the aforementioned de
 just described in more detail in the setcions that follow.
 
 \subsection{Otsu Thresholding}
-xxx
+Otsu thresholding is used to convert a grayscale image to a binray image. Otsu's method calculates a threshold which divides 
+the pixels of an image into two classes (foreground and background pixels). The pixels are divided in such a manner that the inter-class variance 
+of the resulting classes are maximized. 
+
 \subsection{Morphological Opening}
 Morphological opening of an image is obtained by first applying the erosion operator and then applying the dilation operator to an image. 
-Morphological erosion 
-Morphological erosion sets a pixel at (i,j) to the minimum over all pixels in the neighborhood centered at (i,j). Erosion shrinks bright regions and enlarges dark regions.
+Morphological erosion is performed by setting a pixel $(i,j)$ to the minimum of all the pixels in the neighborhood of that pixel. The size 
+and shape of the neighborhood can be set arbitrarily. Erosion enlarges dark regions, while shrinking bright regions. Dilation is a similar operator,
+the only difference is that instead of using the minimun operator it uses the maximum operator. Dilation therefore, enlarges bright regions and shrinks dark regions.
+The net effect of using these two operators one after the other is that dark regions between bright features in an image are enlarged. 
 
-xxx
 \subsection{Hough Transform}
-xxx
+The Hough transform is an algorithm which can be used to detect specific shapes in a binary image. In this, paper we use it to detect lines. 
+The first step in the algorithm is to compute, for every non-zero pixel, the parameters of all the lines which could pass through it. Importantly, we do these calculations using polar coordinates. 
+The result of this calculation is a list of tuples associated with each pixel. Each tuple $(r,\theta)$ can be associated with a line $f$ and contains two values, 
+the distance $r$ from the origin to the closest point on the line $f$ and the angle $\theta$ which is the angle formed by the line 
+connecting the origin and the closest point on the line $f$ and the $x$-axis. Next we grid the list of tuples associated with each non-zero pixel onto a two-dimensional 
+grid, called the accumulator, using $r$ and $\theta$ as index values. The accumulator is initialized as an all zero matrix. Every time we grid a tuple onto the accumulator 
+we simple increment the value stored in the appropriate cell by one. If there are lines present in the image peaks will start to form in the accumalator. Next, we 
+identify the peaks in the accumalator, if there are any, and use their location to compute the parameters of the possible lines contained in the image. 
+
 \subsection{Polygonization}
-xxx
+If we are given multiple line segments within an image we can easily segment the image into smaller polygons. The first step needed to achieve this is to determine 
+all the coordinates at which the line segments intersect each other. The Bentley–Ottmann algorithm is an efficient way to achieve this. Next we need to convert the given line 
+segements into a graph $G$. The intersection points of the original line segments form the nodes of the graph $G$. The segments (these segments will be different to the original given line segments)
+which connect the intersection points will form the edges of the graph. The problem now reduces to finding the cycles in the newly formed graph $G$. This algorithm is explained in more detail in \textbf{[?]}.
+
 
  \textbf{TODO::} Small description on Thresholoding. Binary opening. Houghtransform. Polygonization. Each one seperate section. Overall description of algorithm. Add picture of Hough 
  transform of the binary image and discuss. Short description of Hough transform maybe. 
