@@ -114,7 +114,32 @@ The information we extract from heat-maps (insight gained) can then be used to f
 heat-map include: high traffic volume routes and regions. In this paper, we present an automatic heat-map segmentation algorithm which will allow us to automatically extract the 
  aforementioned pieces of information. In this paper we focus primarily on AIS data (shipping data). 
  
-\section{DATA SET AND STUDY REGIONS}
+\section{DATASET}
+The dataset that was used contains one month (January 2016) of AIS messages transmitted from vessels located in European waters. This data was
+obtained as part of the datAcron maritime use case (http://datacron-project.eu/).  
+The dataset contains messages recoded by both terrestrial as well as satellite AIS based receivers. The AIS dataset is raw and unparsed
+format as received from the AIS data sources and contains all class A and B positional reports (message types 1,2,3,18,19)
+as described in the ITU-R.M 1371-5 specification [5]. These positional reports includes fields such as longitude, latitude,
+speed-over-ground, course-over-ground, rate of turn, naviga-tional status, and true heading. It is assumed that each vessel
+can be uniquely identified by its Marine Mobile Service Identifier (MMSI). In this paper we concentrate on a specific subset of these messages. 
+We only look at AIS messages transmitted from vessels located in the Aegean sea.
+
+
+for the region depicted in Figure 1,
+which covers the majority of European waters. This data has
+been obtained as part of the datAcron maritime use case [6].
+The data contains both terrestrial as well as satellite AIS
+sources. The AIS data is provided in its raw and unparsed
+format as received from the AIS data sources and contains all
+class A and B positional reports (message types 1,2,3,18,19)
+as described in the ITU-R.M 1371-5 specification [5]. These
+positional reports includes fields such as longitude, latitude,
+speed-over-ground, course-over-ground, rate of turn, naviga-
+tional status, and true heading. It is assumed that each vessel
+can be uniquely identified by its Marine Mobile Service
+Identifier (MMSI).
+%datAcron: ”Big Data Analytics for Time Critical Mobility Forecast-
+%ing”, available online: http://datacron-project.eu/
 
 Hallo
 
