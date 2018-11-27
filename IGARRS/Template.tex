@@ -23,8 +23,10 @@
 % Single address.
 % ---------------
 \name{T.L. Grobler$^{\dagger}$ and W. Kleynhans$^{\star}$}
-\address{$\dagger$Dept of Mathematical Sciences, Computer Science Division, Stellenbosch University,\\ Private Bag X1, 7602 Matieland, South Africa\\
-$\star$XXX}
+\address{$\dagger$Department of Mathematical Sciences, Computer Science Division, Stellenbosch University,\\ Private Bag X1, 7602 Matieland, South Africa\\
+$\star$Department
+of Electrical, Electronic and Computer Engineering
+University of Pretoria,\\ Pretoria 0002, South Africa}
 %
 % For example:
 % ------------
@@ -52,8 +54,8 @@ $\star$XXX}
 %
 \begin{abstract}
 In this paper we present a top-down algorithm which is capable of extracting high volume traffic routes from spatial distribution Automatic Identification System (AIS) maps (i.e. heat-maps).
-We tested our algorithm on real AIS data received from vessels that were located in the Aegean sea (during January 2016). The outcome of this test 
-showed that the proposed algorithm shows promise as it was able to detect most of the high traffic routes that we were able to identify with a manual inspection. The ones that were not detected can be detected if we were 
+We tested our algorithm on real AIS data received from vessels that were located in the Aegean sea (during January 2016). The results obtained from this test 
+indicate that the proposed algorithm shows promise as it was able to detect most of the high traffic routes that a human observer would have been able to identify via a visual inspection of the same data. The ones that were not detected can be detected if we were 
 to apply our algorithm in a recursive manner. We finish the paper by making suggestions on how the proposed algorithm could be improved upon.
 \end{abstract}
 %
@@ -84,7 +86,7 @@ pattern mining approaches in literature \cite{zheng2015}, the one we present her
 takes as input an AIS heat-map and not the original raw un-gridded data-points.
 
 The proposed algorithm works as follows. The given AIS heat-map is preprocessed using computer vision techniques. The Hough transform is then employed to extract the high volume traffic routes from the preprocessed heat-map. The extracted traffic routes are then used to segment the 
-heat-map \textbf{into??} high and low traffic regions.
+heat-map into high and low volume traffic regions.
 
 We wish to emphasize that the approach we present in this paper is supplementary and is not intended to replace existing bottom-up approaches. It merely serves to provide additional information 
 which will make it easier to process the original data via more conventional means.
@@ -123,19 +125,19 @@ The dataset that was used contains one month (January 2016) of AIS messages tran
 obtained as part of the datAcron maritime use case (\url{http://datacron-project.eu/}).  
 The dataset contains messages recoded by both terrestrial as well as satellite AIS based receivers. The AIS dataset is raw and unparsed as it contains the AIS messages 
 just as it was received by the AIS receivers. The dataset contains both class A and B positional reports (message types 1,2,3,18,19)
-as described in the ITU-R.M 1371-5 specification \cite{itum}. These messages contain fields such as longitude, latitude,
+as described in the ITU-R.M 1371-5 specification. These messages contain fields such as longitude, latitude,
 speed-over-ground, course-over-ground, rate of turn, navigational status, and true heading. We assumed that each vessel
 can be uniquely identified by its Marine Mobile Service Identifier (MMSI). 
-
+%\cite{itum}
 
 \section{Methodology}
 \label{sec:met}
 As we mentioned in the introduction, the proposed algorithm takes as input an AIS heat-map. It also makes use of a coastline mask and a land mask. The coastline mask
-marks the regions in the heat-map which are close to land and should therefore be ignored during the execution of the algorithm. The land mask contains the regions of the heat-map which 
-are located on land (and should therefore also be excluded). During the first step of the algorithm the element-wise logarithm of the AIS heat-map, we wish to process, is taken. This visually emphasizes the high volume routes found within the heat-map. We then 
+marks the regions in the heat-map which are close to land and should therefore be grouped into its own unique region (segment). The land mask contains the regions of the heat-map which 
+are located on land (and should therefore be excluded from the computation). During the first step of the algorithm the element-wise logarithm of the AIS heat-map, we wish to process, is taken. This visually emphasizes the high volume routes found within the heat-map. We then 
 create a binary heat-map. To achieve this we first convert the heat-map (after having applied an element-wise logarithm to it) into a gray-scale intermediate heat-map. We then filter this intermediate heat-map. We make use of a median filter as it is well known for its ability to detect outliers. We then threshold (we used Otsu thresholding) the  
 filtered heat-map. To clean the binary heat-map (we obtained by applying thresholding) we apply the morphological opening operator to it (which is used to remove noise from the foreground).
-We then use the Hough transform to extract the lines from the opened binary heat-map. We then polygonize the heat-map using the extracted lines. We can then 
+We then use the Hough transform to extract the lines (high volume traffic routes) from the opened binary heat-map. We then polygonize the heat-map using the extracted lines. We can then 
 segment the original heat-map into different regions using the aforementioned derived polygons. The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. We discuss the most important algorithms used within the segmentation approach we 
 just described in more detail in the sections that follow.  
 
@@ -221,7 +223,8 @@ which connect the intersecting points will form the edges of the graph. The prob
 % transform of the binary image and discuss. Short description of Hough transform maybe. 
  
 \section{Results and Conclusion}
-To test our algorithm we applied it to the AIS data described in Section~\ref{sec:data}. Note that we only used a subset of the data as we decided to restrict ourselves to only considering vessels that were located in the Aegean sea. Before we could apply our algorithm we first converted the raw pointal data described in Section~\ref{sec:data} into a heat-map.
+To test our algorithm we applied it to the AIS data described in Section~\ref{sec:data}. Note that we only used a subset of the available data as we decided to only 
+consider AIS messages received from vessels located in the Aegean sea. Before we could apply our algorithm we first converted the raw pointal data described in Section~\ref{sec:data} into a heat-map.
 This was achieved by gridding the data onto a two-dimensional grid. We then applied the algorithm as described in Section~\ref{sec:met} to the aforementioned heat-map. 
 The original heat-map (after having taken the element-wise logarithm of it) can be found in Figure~\ref{fig7:a}. We then converted the image to gray-scale, filtered it and 
 then applied the morphological opening operator to it to obtain Figure~\ref{fig7:b}. We then extracted the most obvious lines from the binary heat-map using the Hough transform. The 
@@ -230,8 +233,8 @@ extracted lines. The result of this segmentation is depicted in Figure~\ref{fig7
 However, not all of the routes were extracted successfully. This can be remedied by applying the algorithm in a recursive fashion, i.e. apply it again to each of the newly identified segmented regions. Moreover, 
 the algorithm needs to be improved further, we are not interested in extracting the entire line as is currently done, but only in the line segments which actually correspond to high 
 traffic routes. This can be accomplished by matching the extracted lines with the original heat-map and only keeping the parts of the line 
-which covers grid-cells containing many gridded AIS data-points. These improvements are to be pursued in a future endeavor.
-
+which overlays grid-cells containing many gridded AIS data-points. These improvements are to be pursued in a future endeavor.
+ 
 In conclusion, we presented an algorithm that can extract high-traffic routes from an AIS heat-map. The extracted traffic routes are then used to segment the original 
 heat-map into low and high volume traffic regions. We also showed that this algorithm works well by testing it on real 
 AIS data. Lastly, we wish to make the code for our algorithm publicly available (which in turn uses \textsc{scikit-image} \cite{scikitimage}), it can be downloaded here: \url{https://github.com/Trienko/s_analysis} .
@@ -255,27 +258,27 @@ AIS data. Lastly, we wish to make the code for our algorithm publicly available 
 % represent true high volume routes. The value of the coastline segments can be separately computed within each polygon.
  
 \begin{figure*}[h] 
-  \begin{subfigure}[b]{0.5\linewidth}
+  \begin{subfigure}[b]{0.49\linewidth}
     \centering
     \includegraphics[width=0.7\linewidth]{AGEAN_DCRON-crop.pdf} 
     \caption{Logarithm applied} 
     \label{fig7:a} 
     \vspace{4ex}
   \end{subfigure}%% 
-  \begin{subfigure}[b]{0.5\linewidth}
+  \begin{subfigure}[b]{0.49\linewidth}
     \centering
     \includegraphics[width=0.59\textwidth]{AGEAN_DCRON_opened-crop.pdf} 
     \caption{Binary segmented image} 
     \label{fig7:b} 
     \vspace{13ex}
     \end{subfigure} 
-  \begin{subfigure}[b]{0.5\linewidth}
+  \begin{subfigure}[b]{0.49\linewidth}
     \centering
     \includegraphics[width=0.7\textwidth]{AGEAN_DCRON_lines-crop.pdf} 
     \caption{Hough Transform} 
     \label{fig7:c} 
   \end{subfigure}%%
-  \begin{subfigure}[b]{0.5\linewidth}
+  \begin{subfigure}[b]{0.49\linewidth}
     \centering
     \includegraphics[width=0.7\textwidth]{AGEAN_DCRON_segmented-crop.pdf} 
     \caption{Segmented image} 
@@ -283,7 +286,7 @@ AIS data. Lastly, we wish to make the code for our algorithm publicly available 
   \end{subfigure} 
   \caption{Results obtained by applying Algorithm 1 to an AIS heat-map which in turn was constructed by using AIS data received from vessels located in the Aegean sea during January 2016 [Longitude between $22^{\circ}$ and $30^{\circ}$ and Latitude between $30^{\circ}$ and $42^{\circ}$]. The top left image was obtained after the logarithm of the original input heat-map was taken (element-wise). The top right image 
   was obtained by applying binary thresholding and morphological opening to a filtered greyscale variant of the top left heat map. The right bottom heat-map depicts the lines we were able to extract 
-  from the top right image using the Hough Transform. The bottom right image contains the final segmented heat map. Notice that the coastline is segmented separately.}
+  from the top right image using the Hough Transform. The bottom right image contains the final segmented heat map. Note that cells close to the coastline are grouped together.}
   \label{fig7} 
 \end{figure*}
 
