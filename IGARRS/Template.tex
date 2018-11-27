@@ -93,7 +93,7 @@ The benefits of the proposed top-down method are:
  \item As this is a top-down approach one can quickly obtain insight into the data, which can be used to better analyze the data using more conventional bottom-up approaches.
  \item High volume traffic routes used primarily for long distance travel can easily be extracted without having to do much preprocessing. 
  \item The extracted high volume traffic routes can be used to naturally segment a map into smaller regions, which in turn can be further analyzed using more conventional bottom-up approaches.
- \item The segmented regions can be divided into low and high volume segments and in conjunction with the extracted high volume routes can be used for traffic flow analysis.
+ %\item The segmented regions can be divided into low and high volume segments and in conjunction with the extracted high volume routes can be used for traffic flow analysis.
  \item In rare cases when one only has access to a trajectory heat-map this algorithm will still be able to extract useful trajectory information.
  \end{itemize}
  
@@ -196,10 +196,11 @@ of the resulting classes are maximized \cite{otsu1979}.
 \subsection{Morphological Opening}
 Morphological opening of an image is obtained by first applying the erosion operator and then applying the dilation operator to an image. 
 Morphological erosion is performed by setting a pixel $(i,j)$ to the minimum of all the pixels in the neighborhood of that pixel. The size 
-and shape of the neighborhood can be set arbitrarily. Erosion enlarges dark regions, while shrinking bright regions. Dilation is a similar operator,
-the only difference is that instead of using the minimun operator it uses the maximum operator. Dilation therefore, enlarges bright regions and shrinks dark regions.
-The net effect of using these two operators one after the other is that dark regions between bright features in an image are enlarged \cite{soille2013}. 
+and shape of the neighborhood can be set arbitrarily. Dilation is a similar operator,
+the only difference is that instead of using the minimun operator it uses the maximum operator. The net effect of using these two operators one after the other is that dark regions between bright features in an image are enlarged \cite{soille2013}. 
 
+%Erosion enlarges dark regions, while shrinking bright regions.
+%Dilation therefore, enlarges bright regions and shrinks dark regions.
 \subsection{Hough Transform}
 The Hough transform is an algorithm which can be used to detect specific shapes in a binary image. In this, paper we use it to detect lines. 
 The first step in the algorithm is to compute, for every non-zero pixel, the parameters of all the lines which could pass through it. Importantly, we do these calculations using polar coordinates. 
@@ -224,7 +225,7 @@ To test our algorithm we applied it to the AIS data described in Section~\ref{se
 This was achieved by gridding the data onto a two-dimensional grid. We then applied the algorithm as described in Section~\ref{sec:met} to the aforementioned heat-map. 
 The original heat-map (after having taken the element-wise logarithm of it) can be found in Figure~\ref{fig7:a}. We then converted the image to gray-scale, filtered it and 
 then applied the morphological opening operator to it to obtain Figure~\ref{fig7:b}. We then extracted the most obvious lines from the binary heat-map using the Hough transform. The 
-extracted lines (i.e. the high volume traffic routes) is depicted in Figure~\ref{fig7:c}. We then segmented the heat-map into high and low volume traffic regions using the 
+extracted lines (i.e. the high volume traffic routes) is depicted in Figure~\ref{fig7:c}. We then segmented the heat-map into differing traffic regions (high and low volume) using the 
 extracted lines. The result of this segmentation is depicted in Figure~\ref{fig7:d}. Closely inspecting Figure~\ref{fig7} reveals that the algorithm succeeds in extracting most of the high volume traffic routes from the heat-map.
 However, not all of the routes were extracted successfully. This can be remedied by applying the algorithm in a recursive fashion, i.e. apply it again to each of the newly identified segmented regions. Moreover, 
 the algorithm needs to be improved further, we are not interested in extracting the entire line as is currently done, but only in the line segments which actually correspond to high 
@@ -233,7 +234,7 @@ which covers grid-cells containing many gridded AIS data-points. These improveme
 
 In conclusion, we presented an algorithm that can extract high-traffic routes from an AIS heat-map. The extracted traffic routes are then used to segment the original 
 heat-map into low and high volume traffic regions. We also showed that this algorithm works well by testing it on real 
-AIS data. Lastly, we wish to make the code for our algorithm publicly available, it can be donwloaded here: \url{https://github.com/Trienko/s_analysis}.
+AIS data. Lastly, we wish to make the code for our algorithm publicly available (which in turn uses \textsc{scikit-image} \cite{scikitimage}), it can be downloaded here: \url{https://github.com/Trienko/s_analysis} .
 
 % \textbf{TODO::} Beskryf wat reg is wat verkeerd is hoe mens iteratief kan verbeter. Goeie punt om dit regtig uit te le....
 %  
