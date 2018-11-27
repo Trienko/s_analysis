@@ -1008,7 +1008,7 @@ class HmapSeg():
           S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
           plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
       
-      plt.imshow(sub_m_copy,vmax=8)
+      plt.imshow(sub_m_copy)
       if save_fig:
          plt.savefig('./'+dir_name+'/'+dir_name+"_ht_lines.pdf")
       else:
@@ -1165,7 +1165,7 @@ class HmapSeg():
           #print("y2 = "+str(dy*y0))
           map.plot((llcrnrlon, urcrnrlon), (urcrnrlat-1*dy*y0, urcrnrlat-1*dy*y1), '-r')
           #break
-      cs = map.imshow(sub_m_rev[::-1,:])
+      cs = map.imshow(sub_m_rev[::-1,:],vmax=8)
 
       parallels = np.linspace(llcrnrlat,urcrnrlat,5)
       map.drawparallels(parallels,labels=[1,0,0,0])
