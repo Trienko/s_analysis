@@ -945,7 +945,7 @@ class HmapSeg():
       cbar = map.colorbar(cs,location='bottom',pad="5%")
       cbar.set_label('log(#)')
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+".png")
+         plt.savefig('./'+dir_name+'/'+dir_name+".pdf")
       else:
          plt.show()
       plt.close()
@@ -966,7 +966,7 @@ class HmapSeg():
       map.imshow(med)
       
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+"_binary.png")
+         plt.savefig('./'+dir_name+'/'+dir_name+"_binary.pdf")
       else:
          plt.show()
       plt.close()
@@ -980,7 +980,7 @@ class HmapSeg():
       map.imshow(opened)
       
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+"_opened.png")
+         plt.savefig('./'+dir_name+'/'+dir_name+"_opened.pdf")
       else:
          plt.show()
       plt.close()
@@ -994,7 +994,7 @@ class HmapSeg():
       plt.imshow(np.log(1 + h),extent=[np.rad2deg(theta[-1]), np.rad2deg(theta[0]), d[-1], d[0]])#aspect=1/1.5
       plt.axes().set_aspect('auto', adjustable='box')
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+"_ht.png")
+         plt.savefig('./'+dir_name+'/'+dir_name+"_ht.pdf")
       else:
          plt.show()
       plt.close()
@@ -1008,9 +1008,9 @@ class HmapSeg():
           S_land.append(((0,y0), (sub_m_copy.shape[1], y1)))
           plt.plot((0, sub_m_copy.shape[1]), (y0, y1), '-r')
       
-      plt.imshow(sub_m_copy)
+      plt.imshow(sub_m_copy,vmax=8)
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+"_ht_lines.png")
+         plt.savefig('./'+dir_name+'/'+dir_name+"_ht_lines.pdf")
       else:
          plt.show()
       plt.close() 
@@ -1145,7 +1145,7 @@ class HmapSeg():
       cbar = map.colorbar(cs,location='bottom',pad="5%")
       cbar.set_label('log(#)')
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+"_segmented.png")
+         plt.savefig('./'+dir_name+'/'+dir_name+"_segmented.pdf")
       else:
          plt.show()
       plt.close() 
@@ -1174,7 +1174,7 @@ class HmapSeg():
       cbar = map.colorbar(cs,location='bottom',pad="5%")
       cbar.set_label('log(#)')
       if save_fig:
-         plt.savefig('./'+dir_name+'/'+dir_name+"_lines.png")
+         plt.savefig('./'+dir_name+'/'+dir_name+"_lines.pdf")
       else:
          plt.show()
       plt.close() 
