@@ -8,6 +8,7 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{algorithm}
 \usepackage{caption}
+\usepackage{url}
 
 
 % Example definitions.
@@ -50,9 +51,9 @@ $\star$XXX}
 \maketitle
 %
 \begin{abstract}
-In this paper we present a top-down algorithm which is capable of extracting high volume traffic routes from spatial distribution Automatic Identification System (AIS) maps (AIS heat-maps).
+In this paper we present a top-down algorithm which is capable of extracting high volume traffic routes from spatial distribution Automatic Identification System (AIS) maps (i.e. heat-maps).
 We tested our algorithm on real AIS data received from vessels that were located in the Aegean sea (during January 2016). The outcome of this test 
-showed that the proposed algorithm has great promise as it was able to detect most of the high traffic routes we were able to identify via a manual inspection. The ones that were not detected can be detected if we were 
+showed that the proposed algorithm shows promise as it was able to detect most of the high traffic routes that we were able to identify with a manual inspection. The ones that were not detected can be detected if we were 
 to apply our algorithm in a recursive manner. We finish the paper by making suggestions on how the proposed algorithm could be improved upon.
 \end{abstract}
 %
@@ -83,16 +84,16 @@ pattern mining approaches in literature \cite{zheng2015}, the one we present her
 takes as input an AIS heat-map and not the original raw un-gridded data-points.
 
 The proposed algorithm works as follows. The given AIS heat-map is preprocessed using computer vision techniques. The Hough transform is then employed to extract the high volume traffic routes from the preprocessed heat-map. The extracted traffic routes are then used to segment the 
-heat-map in to high and low traffic regions.
+heat-map \textbf{into??} high and low traffic regions.
 
 We wish to emphasize that the approach we present in this paper is supplementary and is not intended to replace existing bottom-up approaches. It merely serves to provide additional information 
 which will make it easier to process the original data via more conventional means.
 The benefits of the proposed top-down method are:
 \begin{itemize}
  \item As this is a top-down approach one can quickly obtain insight into the data, which can be used to better analyze the data using more conventional bottom-up approaches.
- \item High volume traffic routes used primarily for long distance travel can be easily extracted without having to do much preprocessing. 
+ \item High volume traffic routes used primarily for long distance travel can easily be extracted without having to do much preprocessing. 
  \item The extracted high volume traffic routes can be used to naturally segment a map into smaller regions, which in turn can be further analyzed using more conventional bottom-up approaches.
- \item The segemented regions can be divided into low and high volume segments and in conjunction with the extracted high volume routes can be used for traffic flow analysis.
+ \item The segmented regions can be divided into low and high volume segments and in conjunction with the extracted high volume routes can be used for traffic flow analysis.
  \item In rare cases when one only has access to a trajectory heat-map this algorithm will still be able to extract useful trajectory information.
  \end{itemize}
  
@@ -118,12 +119,12 @@ The benefits of the proposed top-down method are:
  
 \section{Dataset}
 \label{sec:data}
-The dataset that was used contains one month (January 2016) of AIS messages transmitted from vessels located in European waters. This data was
-obtained as part of the datAcron maritime use case (http://datacron-project.eu/).  
+The dataset that was used contains one month (January 2016) of AIS messages transmitted by vessels located in European waters. This data was
+obtained as part of the datAcron maritime use case (\url{http://datacron-project.eu/}).  
 The dataset contains messages recoded by both terrestrial as well as satellite AIS based receivers. The AIS dataset is raw and unparsed as it contains the AIS messages 
 just as it was received by the AIS receivers. The dataset contains both class A and B positional reports (message types 1,2,3,18,19)
-as described in the ITU-R.M 1371-5 specification [5]. These mesages contain fields such as longitude, latitude,
-speed-over-ground, course-over-ground, rate of turn, naviga-tional status, and true heading. It is assumed that each vessel
+as described in the ITU-R.M 1371-5 specification \cite{itum}. These messages contain fields such as longitude, latitude,
+speed-over-ground, course-over-ground, rate of turn, navigational status, and true heading. We assumed that each vessel
 can be uniquely identified by its Marine Mobile Service Identifier (MMSI). 
 
 
@@ -131,41 +132,41 @@ can be uniquely identified by its Marine Mobile Service Identifier (MMSI).
 \label{sec:met}
 As we mentioned in the introduction, the proposed algorithm takes as input an AIS heat-map. It also makes use of a coastline mask and a land mask. The coastline mask
 marks the regions in the heat-map which are close to land and should therefore be ignored during the execution of the algorithm. The land mask contains the regions of the heat-map which 
-are located on land (and should therefore also be excluded). The first step of the algorithm requires that we take the element-wise logarithm of the original starting AIS heat-map. This visually emphasizes the high volume routes found within the heat-map. We then 
-create a binary heat-map. To achieve this we first convert the heat-map (after having applied an element-wise logarithm to it) into a gray-scale intermediate heat-map, next we filter the newly created intermediate heat-map. We make use of a median filter as it is well known for its ability to detect outliers. We then threshold (we used Otsu thresholding) the  
+are located on land (and should therefore also be excluded). During the first step of the algorithm the element-wise logarithm of the AIS heat-map, we wish to process, is taken. This visually emphasizes the high volume routes found within the heat-map. We then 
+create a binary heat-map. To achieve this we first convert the heat-map (after having applied an element-wise logarithm to it) into a gray-scale intermediate heat-map. We then filter this intermediate heat-map. We make use of a median filter as it is well known for its ability to detect outliers. We then threshold (we used Otsu thresholding) the  
 filtered heat-map. To clean the binary heat-map (we obtained by applying thresholding) we apply the morphological opening operator to it (which is used to remove noise from the foreground).
-We then use the Hough Transform to extract the lines from the opened binary heat-map. We then polygonize the heat-map using the extracted lines. We can then 
-segment the original heat-map into different regions using the aforementioned derived polygons. The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. We discuss the most important algorithm used within the segmentation approach we 
+We then use the Hough transform to extract the lines from the opened binary heat-map. We then polygonize the heat-map using the extracted lines. We can then 
+segment the original heat-map into different regions using the aforementioned derived polygons. The pseudo-code of the proposed segmentation algorithm is given in Algorithm 1. We discuss the most important algorithms used within the segmentation approach we 
 just described in more detail in the sections that follow.  
 
 \begin{algorithm}
  \caption{Polygon Heat-map Segmentation Algorithm}\label{euclid}
  \begin{algorithmic}[1]
- \Procedure{polySeg}{heat-map,coastlinemask,lmask}
- \State $\textrm{heat-map} \gets \log(\textrm{heat-map}+1)$
+ \Procedure{polySeg}{heatmap,coastlinemask,lmask}
+ \State $\textrm{heatmap} \gets \log(\textrm{heat-map}+1)$
  %\Comment{emphasizes the linear tracks}
  \State $\textrm{copy} \gets \textrm{heat-map}$
- \State $\textrm{heamap} \gets \textrm{convertToGrayscale(heat-map)}$
+ \State $\textrm{heatmap} \gets \textrm{convertToGrayscale(heatmap)}$
  %\Comment{store a copy of original}
- \State $\textrm{heat-map} \gets \textrm{maskCoastline(heat-map,coastlinemask)}$
+ \State $\textrm{heatmap} \gets \textrm{maskCoastline(heatmap,coastlinemask)}$
  %\Comment{mask coastline}
- \State $\textrm{heat-map} \gets \textrm{heat-map - medianFilter(heat-map)}$ 
+ \State $\textrm{heatmap} \gets \textrm{heatmap - medianFilter(heatmap)}$ 
  %\Comment{detect outliers}
- \State $\textrm{heat-map} \gets \textrm{otsuThreshold(heat-map)}$
+ \State $\textrm{heatmap} \gets \textrm{otsuThreshold(heatmap)}$
  %\Comment{binary segmentation}
  \State $\textrm{heat-map} \gets \textrm{binaryOpening(heat-map)}$
  %\Comment{clears the noisy region}
- \State $\textrm{lines} \gets \textrm{houghTransform(heeatmap)}$
+ \State $\textrm{lines} \gets \textrm{houghTransform(heatmap)}$
  %\Comment{extract lines from image}
  \State $\textrm{polygons} \gets \textrm{polygonize(lines,coastlinemask,lmask)}$
  %\Comment{polygonize}
  \For{polygon in polygons}
-     \State $\textrm{heat-map[polygon]} \gets \textrm{average(copy[polygon])}$ 
+     \State $\textrm{heatmap[polygon]} \gets \textrm{average(copy[polygon])}$ 
  \EndFor
- \State $\textrm{heat-map[coastlmask]} \gets \textrm{average(copy[coastlmask])}$
- \State $\textrm{heat-map[lmask]} \gets 0$
+ \State $\textrm{heatmap[coastlmask]} \gets \textrm{average(copy[coastlmask])}$
+ \State $\textrm{heatmap[lmask]} \gets 0$
  %\Comment{segmentation}
- \State plot(heat-map)
+ \State plot(heatmap)
  
 % \State $\textit{stringlen} \gets \text{length of }\textit{string}$
 % \State $i \gets \textit{patlen}$
@@ -188,16 +189,16 @@ just described in more detail in the sections that follow.
 
 
 \subsection{Otsu Thresholding}
-Otsu thresholding is used to convert a grayscale image to a binray image. Otsu's method calculates a threshold which divides 
+Otsu thresholding is used to convert a gray-scale image to a binary image. Otsu's method calculates a threshold which divides 
 the pixels of an image into two classes (foreground and background pixels). The pixels are divided in such a manner that the inter-class variance 
-of the resulting classes are maximized. 
+of the resulting classes are maximized \cite{otsu1979}. 
 
 \subsection{Morphological Opening}
 Morphological opening of an image is obtained by first applying the erosion operator and then applying the dilation operator to an image. 
 Morphological erosion is performed by setting a pixel $(i,j)$ to the minimum of all the pixels in the neighborhood of that pixel. The size 
 and shape of the neighborhood can be set arbitrarily. Erosion enlarges dark regions, while shrinking bright regions. Dilation is a similar operator,
 the only difference is that instead of using the minimun operator it uses the maximum operator. Dilation therefore, enlarges bright regions and shrinks dark regions.
-The net effect of using these two operators one after the other is that dark regions between bright features in an image are enlarged. 
+The net effect of using these two operators one after the other is that dark regions between bright features in an image are enlarged \cite{soille2013}. 
 
 \subsection{Hough Transform}
 The Hough transform is an algorithm which can be used to detect specific shapes in a binary image. In this, paper we use it to detect lines. 
@@ -206,36 +207,33 @@ The result of this calculation is a list of tuples associated with each pixel. E
 the distance $r$ from the origin to the closest point on the line $f$ and the angle $\theta$ which is the angle formed by the line 
 connecting the origin and the closest point on the line $f$ and the $x$-axis. Next we grid the list of tuples associated with each non-zero pixel onto a two-dimensional 
 grid, called the accumulator, using $r$ and $\theta$ as index values. The accumulator is initialized as an all zero matrix. Every time we grid a tuple onto the accumulator 
-we simple increment the value stored in the appropriate cell by one. If there are lines present in the image peaks will start to form in the accumalator. Next, we 
-identify the peaks in the accumalator, if there are any, and use their location to compute the parameters of the possible lines contained in the image. 
+we increment the value stored in the appropriate cell by one. If there are lines present in the image peaks will start to form in the accumulator. Next, we 
+identify the peaks in the accumulator, if there are any, and use their location to compute the parameters of the possible lines contained within the image \cite{illingworth1988}. 
 
 \subsection{Polygonization}
 If we are given multiple line segments within an image we can easily segment the image into smaller polygons. The first step needed to achieve this is to determine 
 all the coordinates at which the line segments intersect each other. The Bentley–Ottmann algorithm is an efficient way to achieve this. Next we need to convert the given line 
-segements into a graph $G$. The intersection points of the original line segments form the nodes of the graph $G$. The segments (these segments will be different to the original given line segments)
-which connect the intersection points will form the edges of the graph. The problem now reduces to finding the cycles in the newly formed graph $G$. This algorithm is explained in more detail in \textbf{[?]}.
+segments into a graph $G$. The intersection points of the original line segments form the nodes of the graph $G$. The segments (these segments will be different to the original given line segments)
+which connect the intersecting points will form the edges of the graph. The problem now reduces to finding the cycles in the newly formed graph $G$. This algorithm is explained in more detail in \cite{ferreira2003}.
 
 % \textbf{TODO::} Small description on Thresholoding. Binary opening. Houghtransform. Polygonization. Each one seperate section. Overall description of algorithm. Add picture of Hough 
 % transform of the binary image and discuss. Short description of Hough transform maybe. 
  
-\section{Results}
-To test our algorithm we applied it to AIS data received from vessels located in the Aegean sea during January 2016. The dataset we used is described 
-in more detail in Section~\ref{sec:}. Before we could apply our algorithm we first converted the raw pointal data described in Section~\ref{sec:} into a heat-map.
-This was achieved by gridding the data onto a two-dimensional grid. We then applied the algorithm as described in Section~\ref{sec:} to the aformentioned heat-map. 
-The original heat-map (after having taken the elemen-wise logarithm of it) can be found in Figure~\ref{fig:}. We then converted the image to grayscale, filtered it and 
-then applied the morphological opening operator to it to obtain Figure~\ref{fig:}. We then extracted the most obvious lines from the binary image using the Hough transform. The 
-extracted lines (i.e. the high volume traffic routes) is depicted in Figure~\ref{fig:}. We then segemented the image into high and low volume traffic regions using the 
-extracted lines. The result of this segmentation is depicted in Figure~\ref{fig:}. Closely inspecting Figure~\ref{} reveals that the algorithm suceeds in extracting the high volume traffic routes from the heat-map.
-However, not all of the routes were extracted sucesfully. This can be remedied by applying the algorithm in a recursive fashion, i.e. apply it to each of the segmented regions. Moreover, 
+\section{Results and Conclusion}
+To test our algorithm we applied it to the AIS data described in Section~\ref{sec:data}. Note that we only used a subset of the data as we decided to restrict ourselves to only considering vessels that were located in the Aegean sea. Before we could apply our algorithm we first converted the raw pointal data described in Section~\ref{sec:data} into a heat-map.
+This was achieved by gridding the data onto a two-dimensional grid. We then applied the algorithm as described in Section~\ref{sec:met} to the aforementioned heat-map. 
+The original heat-map (after having taken the element-wise logarithm of it) can be found in Figure~\ref{fig7:a}. We then converted the image to gray-scale, filtered it and 
+then applied the morphological opening operator to it to obtain Figure~\ref{fig7:b}. We then extracted the most obvious lines from the binary heat-map using the Hough transform. The 
+extracted lines (i.e. the high volume traffic routes) is depicted in Figure~\ref{fig7:c}. We then segmented the heat-map into high and low volume traffic regions using the 
+extracted lines. The result of this segmentation is depicted in Figure~\ref{fig7:d}. Closely inspecting Figure~\ref{fig7} reveals that the algorithm succeeds in extracting most of the high volume traffic routes from the heat-map.
+However, not all of the routes were extracted successfully. This can be remedied by applying the algorithm in a recursive fashion, i.e. apply it again to each of the newly identified segmented regions. Moreover, 
 the algorithm needs to be improved further, we are not interested in extracting the entire line as is currently done, but only in the line segments which actually correspond to high 
-traffic trajectories. This can be accomplished by matching the extracted lines with the original heat-map and only keeping the parts of the line 
+traffic routes. This can be accomplished by matching the extracted lines with the original heat-map and only keeping the parts of the line 
 which covers grid-cells containing many gridded AIS data-points. These improvements are to be pursued in a future endeavor.
 
-\section{Conclusion}
-In this paper we presented an algorithm that can extract high-traffic routes from an AIS heat-map. The extracted traffic routes are then use to segment the original 
-heat-map into low and high volume traffic regions. We showed that this algorithm works well by testing it on real 
-AIS data. The results we obtained by applying this algorithm to real data is shown in Figure~\ref{}. Figure\ref{fig:}, also highlights some shortcomming of the algorithm, for one, it failed in extracting all the visible routes. 
-However, this can easily be mitigated by re-applying the algorithm to each of the identified segemented regions. lastly, the code for our algorithm is made publically available and can be donwloaded here:.
+In conclusion, we presented an algorithm that can extract high-traffic routes from an AIS heat-map. The extracted traffic routes are then used to segment the original 
+heat-map into low and high volume traffic regions. We also showed that this algorithm works well by testing it on real 
+AIS data. Lastly, we wish to make the code for our algorithm publicly available, it can be donwloaded here: \url{https://github.com/Trienko/s_analysis}.
 
 % \textbf{TODO::} Beskryf wat reg is wat verkeerd is hoe mens iteratief kan verbeter. Goeie punt om dit regtig uit te le....
 %  
@@ -282,13 +280,12 @@ However, this can easily be mitigated by re-applying the algorithm to each of th
     \caption{Segmented image} 
     \label{fig7:d} 
   \end{subfigure} 
-  \caption{A heat-map genererated from AIS data of ships located in the Aegean sea during January 2016 [Longitude between $22^{\circ}$ and $30^{\circ}$ and Latitude between $30^{\circ}$ and $42^{\circ}$]. The above subfigures were generated by applying the segmentation algorithm depicted in Algorithm 1 to an AIS heat-map of the region (which we also constructed from raw pointal AIS data). The top left image was optained after the logarithm of the original heat-map was taken (element-wise). The top right image 
+  \caption{Results obtained by applying Algorithm 1 to an AIS heat-map which in turn was constructed by using AIS data received from vessels located in the Aegean sea during January 2016 [Longitude between $22^{\circ}$ and $30^{\circ}$ and Latitude between $30^{\circ}$ and $42^{\circ}$]. The top left image was obtained after the logarithm of the original input heat-map was taken (element-wise). The top right image 
   was obtained by applying binary thresholding and morphological opening to a filtered greyscale variant of the top left heat map. The right bottom heat-map depicts the lines we were able to extract 
   from the top right image using the Hough Transform. The bottom right image contains the final segmented heat map. Notice that the coastline is segmented separately.}
   \label{fig7} 
 \end{figure*}
 
-...
 
 % \section{Introduction}
 % \label{sec:intro}
