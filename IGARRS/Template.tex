@@ -22,11 +22,12 @@
 %
 % Single address.
 % ---------------
-\name{T.L. Grobler$^{\dagger}$ and W. Kleynhans$^{\star}$}
+\name{T.L. Grobler$^{\dagger}$ and W. Kleynhans$^{\star}$$^{\ddagger}$}
 \address{$\dagger$Department of Mathematical Sciences, Computer Science Division, Stellenbosch University,\\ Private Bag X1, 7602 Matieland, South Africa\\
 $\star$Department
 of Electrical, Electronic and Computer Engineering
-University of Pretoria,\\ Pretoria 0002, South Africa}
+University of Pretoria,\\ Pretoria 0002, South Africa\\
+$\ddagger$ IMIS Global Limited, Fareham, UK}
 %
 % For example:
 % ------------
@@ -122,7 +123,7 @@ The benefits of the proposed top-down method are:
 \section{Dataset}
 \label{sec:data}
 The dataset that was used contains one month (January 2016) of AIS messages transmitted by vessels located in European waters. This data was
-obtained as part of the datAcron maritime use case (\url{http://datacron-project.eu/}).  
+obtained as part of the datAcron maritime use case (\url{http://datacron-project.eu/}) \cite{vouros2017}.  
 The dataset contains messages recoded by both terrestrial as well as satellite AIS based receivers. The AIS dataset is raw and unparsed as it contains the AIS messages 
 just as it was received by the AIS receivers. The dataset contains both class A and B positional reports (message types 1,2,3,18,19)
 as described in the ITU-R.M 1371-5 specification. These messages contain fields such as longitude, latitude,
@@ -215,10 +216,10 @@ identify the peaks in the accumulator, if there are any, and use their location 
 
 \subsection{Polygonization}
 If we are given multiple line segments within an image we can easily segment the image into smaller polygons. The first step needed to achieve this is to determine 
-all the coordinates at which the line segments intersect each other. The Bentley–Ottmann algorithm is an efficient way to achieve this. Next we need to convert the given line 
+all the coordinates at which the line segments intersect each other. Next we need to convert the given line 
 segments into a graph $G$. The intersection points of the original line segments form the nodes of the graph $G$. The segments (these segments will be different to the original given line segments)
 which connect the intersecting points will form the edges of the graph. The problem now reduces to finding the cycles in the newly formed graph $G$. This algorithm is explained in more detail in \cite{ferreira2003}.
-
+%The Bentley–Ottmann algorithm is an efficient way to achieve this.
 % \textbf{TODO::} Small description on Thresholoding. Binary opening. Houghtransform. Polygonization. Each one seperate section. Overall description of algorithm. Add picture of Hough 
 % transform of the binary image and discuss. Short description of Hough transform maybe. 
  
@@ -235,9 +236,8 @@ the algorithm needs to be improved further, we are not interested in extracting 
 traffic routes. This can be accomplished by matching the extracted lines with the original heat-map and only keeping the parts of the line 
 which overlays grid-cells containing many gridded AIS data-points. These improvements are to be pursued in a future endeavor.
  
-In conclusion, we presented an algorithm that can extract high-traffic routes from an AIS heat-map. The extracted traffic routes are then used to segment the original 
-heat-map into low and high volume traffic regions. We also showed that this algorithm works well by testing it on real 
-AIS data. Lastly, we wish to make the code for our algorithm publicly available (which in turn uses \textsc{scikit-image} \cite{scikitimage}), it can be downloaded here: \url{https://github.com/Trienko/s_analysis} .
+In conclusion, we presented an algorithm that can extract high-traffic routes from an AIS heat-map. The extracted routes were then used to segement the image. 
+Lastly, we wish to make the code for our algorithm publicly available (which in turn uses \textsc{scikit-image} \cite{scikitimage}), it can be downloaded here: \url{https://github.com/Trienko/s_analysis} .
 
 % \textbf{TODO::} Beskryf wat reg is wat verkeerd is hoe mens iteratief kan verbeter. Goeie punt om dit regtig uit te le....
 %  
